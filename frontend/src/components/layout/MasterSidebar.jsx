@@ -14,8 +14,7 @@ const CHECKED_IN_STATES = ["Working", "On Break"];
 
 function SidebarContent({ pathname, closeMobile, items, isAdmin, handleClockIn, handleLogout, isCheckedIn, currentStatus, user }) {
   return (
-    <aside className="flex h-full w-[280px] shrink-0 flex-col bg-slate-900 px-6 py-7">
-      <div className="flex items-center justify-between gap-3 px-1">
+<aside className="flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden bg-slate-900 px-6 py-5">        <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-dark text-primary-foreground ring-2 ring-white ring-offset-2 ring-offset-black dark:bg-slate-900/10 text-white">
             <span className="text-sm font-extrabold">≫</span>
@@ -29,13 +28,13 @@ function SidebarContent({ pathname, closeMobile, items, isAdmin, handleClockIn, 
         </button>
       </div>
 
-      <nav className="mt-10 flex flex-1 flex-col gap-1.5 pl-4">
-        {items.map((item) => (
+<nav className="mt-8 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain pl-4 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {items.map((item) => (
           <NavItem key={item.label} {...item} active={pathname.startsWith(item.href)} />
         ))}
       </nav>
 
-      <div className="border-t border-white/10 pl-4 pt-5 space-y-1.5">
+<div className="mt-auto shrink-0 border-t border-white/10 pl-4 pt-4 pb-2 space-y-1.5">
         <NavItem icon={Settings} label="Settings" href="/profile" active={pathname === "/profile"} />
 
         {!isAdmin && (
@@ -130,8 +129,8 @@ export default function MasterSidebar() {
 
   return (
     <>
-      <div className="hidden lg:flex h-screen w-[280px] shrink-0">
-        <SidebarContent
+<div className="hidden lg:flex h-dvh w-[280px] shrink-0">
+            <SidebarContent
           pathname={pathname}
           closeMobile={() => setMobileOpen(false)}
           items={items}
