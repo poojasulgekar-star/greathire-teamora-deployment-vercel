@@ -199,15 +199,15 @@ function EditProfileForm({ initial, onCancel, onSave, saving }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="text-xs text-slate-400 dark:text-slate-500 mb-1 block">Full Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400" />
+          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400" />
         </div>
         <div>
           <label className="text-xs text-slate-400 dark:text-slate-500 mb-1 block">Email</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400" />
         </div>
         <div>
           <label className="text-xs text-slate-400 dark:text-slate-500 mb-1 block">Phone</label>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400" />
         </div>
       </div>
       <div className="flex items-center gap-2 mt-4">
