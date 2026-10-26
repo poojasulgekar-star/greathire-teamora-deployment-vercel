@@ -21,7 +21,16 @@ export function getPrimaryClientOrigin(req) {
     try {
       if (rawOrigin) {
         let originUrl = new URL(rawOrigin).origin.replace(/\/+$/, "");
-        if (allowed.includes(originUrl)) {
+        let isAllowed = allowed.some((cleanAllowed) => {
+          let clean = cleanAllowed.replace(/\/+$/, "");
+          if (clean === originUrl) return true;
+          if (clean.includes("*")) {
+            let regex = new RegExp("^" + clean.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$");
+            return regex.test(originUrl);
+          }
+          return false;
+        });
+        if (isAllowed) {
           return originUrl;
         }
       }
@@ -30,7 +39,9 @@ export function getPrimaryClientOrigin(req) {
     }
   }
 
-  // Prioritize production (non-localhost) origin over localhost
-  let prodOrigin = allowed.find((o) => !o.includes("localhost") && !o.includes("127.0.0.1"));
-  return prodOrigin || allowed[0] || "http://localhost:5173";
+  // Prioritize production (non-wildcard, non-localhost) origin over localhost
+  let prodOrigin = allowed.find(
+    (o) => !o.includes("*") && !o.includes("localhost") && !o.includes("127.0.0.1")
+  );
+  return prodOrigin || "https://frontend-three-alpha-37.vercel.app";
 }
