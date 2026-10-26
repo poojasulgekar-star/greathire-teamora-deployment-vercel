@@ -585,9 +585,13 @@ export default function MessagesPage() {
           resolve();
           return;
         }
-        reject(new Error(`Storage upload failed (${xhr.status}). Check the bucket CORS and storage configuration.`));
+        if (xhr.status === 413) {
+          reject(new Error("File upload failed: File exceeds the serverless payload limit (4.5 MB on Vercel). To upload larger files, configure S3 storage."));
+          return;
+        }
+        reject(new Error(`Storage upload failed (${xhr.status}). Check server connection or storage configuration.`));
       };
-      xhr.onerror = () => reject(new Error("Storage upload failed. Check the bucket CORS configuration and try again."));
+      xhr.onerror = () => reject(new Error("Storage upload failed. Ensure the backend server is reachable, or check if the file exceeds the server upload limit."));
       xhr.onabort = () => reject(new Error("Upload was cancelled."));
       xhr.send(file);
     });
