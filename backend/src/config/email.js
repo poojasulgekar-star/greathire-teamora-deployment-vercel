@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+﻿import nodemailer from "nodemailer";
 import { logger } from "./logger.js";
 
 function gmailAuth() {
@@ -49,7 +49,7 @@ function passwordResetEmailHtml({ resetUrl }) {
                   This link will expire in 30 minutes.
                 </p>
                 <p style="margin:16px 0 0;font-size:13px;line-height:20px;color:#6b7280;">
-                  If you did not request this password reset, you can safely ignore this email — your password will not be changed.
+                  If you did not request this password reset, you can safely ignore this email ΓÇö your password will not be changed.
                 </p>
                 <p style="margin:24px 0 0;font-size:13px;line-height:20px;color:#9ca3af;">
                   Teamora Security Team
@@ -64,7 +64,7 @@ function passwordResetEmailHtml({ resetUrl }) {
 </html>`;
 }
 
-/** Sends the password-reset email through Gmail / Google SMTP. Never throws — a delivery
+/** Sends the password-reset email through Gmail / Google SMTP. Never throws ΓÇö a delivery
  * failure must not leak whether the account exists or block the generic
  * "if an account exists" response, so failures are logged and swallowed. */
 export async function sendPasswordResetEmail({ to, resetUrl }) {
@@ -72,7 +72,7 @@ export async function sendPasswordResetEmail({ to, resetUrl }) {
   if (!configured) {
     logger.warn(
       { to },
-      `[email] GMAIL_USER / GMAIL_APP_PASSWORD not set — skipping send. Reset link (dev only): ${resetUrl}`
+      `[email] GMAIL_USER / GMAIL_APP_PASSWORD not set ΓÇö skipping send. Reset link (dev only): ${resetUrl}`
     );
     return { skipped: true };
   }
