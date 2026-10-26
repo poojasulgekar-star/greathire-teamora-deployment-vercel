@@ -1,16 +1,12 @@
 // Thin fetch wrapper around the GreatHire Teamora backend API.
-// Base URL comes from VITE_API_BASE_URL (see .env.example) so the Vercel/
-// React shell can point at a hosted Render API in production.
-
-// const API_BASE_URL =
-//   import.meta.env.VITE_API_BASE_URL ||
-//   (import.meta.env.PROD ? "https://greathire-1.onrender.com" : "http://localhost:5000/api");
+// Base URL comes from VITE_API_BASE_URL (see .env.example).
+// In production on Vercel:
+// - If VITE_API_BASE_URL is set (e.g. separate backend project on Vercel), it uses that.
+// - If unset, it defaults to "/api" (same-domain serverless routing).
 
 const configuredApiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.PROD
-    ? "https://greathire-teamora-deployment-backend.onrender.com/api"
-    : "http://localhost:5000/api");
+  (import.meta.env.PROD ? "/api" : "http://localhost:5000/api");
 
 const normalizedApiBaseUrl = configuredApiBaseUrl.replace(/\/+$/, "");
 const API_BASE_URL = /\/api$/i.test(normalizedApiBaseUrl)

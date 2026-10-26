@@ -10,7 +10,16 @@ import { dirname, join } from "node:path";
 import { getClientOrigins } from "./config/clientOrigins.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const openapiDocument = YAML.parse(readFileSync(join(__dirname, "..", "openapi.yaml"), "utf8"));
+let openapiDocument = {};
+try {
+  openapiDocument = YAML.parse(readFileSync(join(__dirname, "..", "openapi.yaml"), "utf8"));
+} catch (err) {
+  openapiDocument = {
+    openapi: "3.0.0",
+    info: { title: "GreatHire Teamora API", version: "1.0.0" },
+    paths: {},
+  };
+}
 
 import { logger } from "./config/logger.js";
 import passport from "./config/passport.js";
@@ -33,6 +42,9 @@ import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 export function createApp() {
   let app = express();
 
+  // Trust first proxy hop (Vercel reverse proxy) so req.ip and rate-limiting work properly
+  app.set("trust proxy", 1);
+
   app.use(helmet());
   app.use(
     pinoHttp({
@@ -51,7 +63,23 @@ export function createApp() {
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin || clientOrigins.includes(origin)) {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+
+        let normalized = origin.trim().replace(/\/+$/, "");
+        let isAllowed = clientOrigins.some((allowed) => {
+          let cleanAllowed = allowed.replace(/\/+$/, "");
+          if (cleanAllowed === normalized) return true;
+          if (cleanAllowed.includes("*")) {
+            let regex = new RegExp("^" + cleanAllowed.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$");
+            return regex.test(normalized);
+          }
+          return false;
+        });
+
+        if (isAllowed) {
           callback(null, true);
           return;
         }

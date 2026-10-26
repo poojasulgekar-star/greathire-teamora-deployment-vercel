@@ -94,7 +94,7 @@ export let authController = {
     // registered (timing- and response-based enumeration).
     if (user) {
       let rawToken = await UsersStore.createPasswordResetToken(user.id);
-      let clientOrigin = getPrimaryClientOrigin();
+      let clientOrigin = getPrimaryClientOrigin(req);
       let resetUrl = `${clientOrigin}/reset-password?token=${encodeURIComponent(rawToken)}`;
       await sendPasswordResetEmail({ to: user.email, resetUrl });
     }

@@ -539,7 +539,7 @@ export default function MessagesPage() {
 
   function getSharedFileError(error, message = error?.message) {
     if (error?.status === 404 && error.message?.startsWith("Route not found:")) {
-      return "The backend does not have the shared-file upload route yet. Restart the local backend from the backend folder, or deploy the latest backend changes to Render.";
+      return "The backend does not have the shared-file upload route yet. Restart the local backend from the backend folder, or deploy the latest backend changes to Vercel.";
     }
     if (error?.status === 404) {
       return "This conversation or file is no longer available to your account. Refresh the conversation and try again.";

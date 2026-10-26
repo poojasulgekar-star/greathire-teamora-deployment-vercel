@@ -38,7 +38,7 @@ if (googleEnabled) {
     passport.authenticate("google", { session: false, failureRedirect: "/api/auth/oauth/failure" }),
     asyncHandler(async (req, res) => {
       let { token } = await authController.issueOAuthToken(req.user.email, req.user.name);
-      let clientUrl = getPrimaryClientOrigin();
+      let clientUrl = getPrimaryClientOrigin(req);
       res.redirect(`${clientUrl}/dashboard?token=${token}`);
     })
   );
@@ -59,7 +59,7 @@ if (microsoftEnabled) {
     passport.authenticate("microsoft", { session: false, failureRedirect: "/api/auth/oauth/failure" }),
     asyncHandler(async (req, res) => {
       let { token } = await authController.issueOAuthToken(req.user.email, req.user.name);
-      let clientUrl = getPrimaryClientOrigin();
+      let clientUrl = getPrimaryClientOrigin(req);
       res.redirect(`${clientUrl}/dashboard?token=${token}`);
     })
   );
@@ -73,7 +73,7 @@ if (microsoftEnabled) {
 }
 
 router.get("/oauth/failure", (req, res) => {
-  let clientUrl = getPrimaryClientOrigin();
+  let clientUrl = getPrimaryClientOrigin(req);
   res.redirect(`${clientUrl}/login?error=oauth_failed`);
 });
 

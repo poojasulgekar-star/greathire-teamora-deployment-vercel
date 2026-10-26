@@ -1,4 +1,4 @@
-﻿import nodemailer from "nodemailer";
+import nodemailer from "nodemailer";
 import { logger } from "./logger.js";
 
 function gmailAuth() {
@@ -15,7 +15,19 @@ function createTransporter() {
     port: 465,
     secure: true,
     auth: { user, pass },
+    connectionTimeout: 7000,
+    greetingTimeout: 7000,
+    socketTimeout: 7000,
   });
+}
+
+function parseSender(rawSender, fallbackEmail) {
+  let sender = (rawSender || "").trim() || fallbackEmail;
+  let match = sender.match(/^(.*?)\s*<(.+?)>$/);
+  if (match) {
+    return { name: match[1].trim().replace(/^["']|["']$/g, ""), email: match[2].trim() };
+  }
+  return { name: "Teamora", email: sender };
 }
 
 function passwordResetEmailHtml({ resetUrl }) {
@@ -64,33 +76,113 @@ function passwordResetEmailHtml({ resetUrl }) {
 </html>`;
 }
 
-/** Sends the password-reset email through Gmail / Google SMTP. Never throws ΓÇö a delivery
- * failure must not leak whether the account exists or block the generic
- * "if an account exists" response, so failures are logged and swallowed. */
+/** Sends the password-reset email.
+ * Supports:
+ *  1. Brevo REST API (HTTPS port 443 — works seamlessly in cloud & serverless, 300 free emails/day)
+ *  2. Resend REST API (HTTPS port 443 — works in cloud & serverless)
+ *  3. Gmail SMTP via Nodemailer (local dev or hosting where port 465 is unblocked)
+ * Never throws — failures are logged so account existence is not leaked.
+ */
 export async function sendPasswordResetEmail({ to, resetUrl }) {
-  let { configured, from } = gmailAuth();
-  if (!configured) {
-    logger.warn(
-      { to },
-      `[email] GMAIL_USER / GMAIL_APP_PASSWORD not set ΓÇö skipping send. Reset link (dev only): ${resetUrl}`
-    );
-    return { skipped: true };
+  let brevoApiKey = (process.env.BREVO_API_KEY || "").trim();
+  let resendApiKey = (process.env.RESEND_API_KEY || "").trim();
+  let { user, pass, from, configured: gmailConfigured } = gmailAuth();
+  let html = passwordResetEmailHtml({ resetUrl });
+
+  // 1. Try Brevo HTTPS API if key is present (ideal for cloud serverless — port 443 HTTPS)
+  if (brevoApiKey) {
+    try {
+      let sender = parseSender(process.env.BREVO_FROM_EMAIL || from, user || "noreply@greathire.com");
+      let res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": brevoApiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          sender,
+          to: [{ email: to }],
+          subject: "Reset your Teamora password",
+          htmlContent: html,
+        }),
+      });
+
+      if (res.ok) {
+        let data = await res.json().catch(() => ({}));
+        logger.info({ to, messageId: data?.messageId }, "[email] Password reset email sent via Brevo HTTPS API");
+        return { skipped: false, ok: true, provider: "brevo" };
+      }
+
+      let errText = await res.text().catch(() => "");
+      logger.error({ status: res.status, body: errText }, "[email] Brevo HTTPS API request failed");
+    } catch (err) {
+      logger.error({ err }, "[email] Failed to send email via Brevo HTTPS API");
+    }
   }
 
-  try {
-    let info = await createTransporter().sendMail({
-      from,
-      to,
-      subject: "Reset your Teamora password",
-      html: passwordResetEmailHtml({ resetUrl }),
-    });
-    logger.info({ to, messageId: info.messageId }, "[email] Password reset email sent via Google/Gmail SMTP");
-    return { skipped: false, ok: true };
-  } catch (err) {
-    logger.error(
-      { err, to, code: err.code, response: err.response },
-      "[email] Failed to send password reset email via Google/Gmail SMTP"
-    );
-    return { skipped: false, ok: false };
+  // 2. Try Resend HTTPS API if key is present
+  if (resendApiKey) {
+    try {
+      let fromEmail = (process.env.RESEND_FROM_EMAIL || from || "Teamora <onboarding@resend.dev>").trim();
+      let res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [to],
+          subject: "Reset your Teamora password",
+          html,
+        }),
+      });
+
+      if (res.ok) {
+        let data = await res.json().catch(() => ({}));
+        logger.info({ to, id: data?.id }, "[email] Password reset email sent via Resend HTTPS API");
+        return { skipped: false, ok: true, provider: "resend" };
+      }
+
+      let errText = await res.text().catch(() => "");
+      logger.error({ status: res.status, body: errText }, "[email] Resend HTTPS API request failed");
+    } catch (err) {
+      logger.error({ err }, "[email] Failed to send email via Resend HTTPS API");
+    }
   }
+
+  // 3. Try Gmail SMTP if configured
+  if (gmailConfigured) {
+    try {
+      let info = await createTransporter().sendMail({
+        from,
+        to,
+        subject: "Reset your Teamora password",
+        html,
+      });
+      logger.info({ to, messageId: info.messageId }, "[email] Password reset email sent via Google/Gmail SMTP");
+      return { skipped: false, ok: true, provider: "gmail-smtp" };
+    } catch (err) {
+      let isBlockedOrTimeout = err.code === "ETIMEDOUT" || err.code === "ECONNREFUSED" || err.command === "CONN";
+      if (isBlockedOrTimeout) {
+        logger.warn(
+          { code: err.code, to },
+          "[email] Gmail SMTP connection timed out or blocked. In serverless or restricted network environments, outbound SMTP ports (25, 465, 587) may be blocked. Use BREVO_API_KEY (HTTPS port 443, free 300 emails/day) or RESEND_API_KEY instead."
+        );
+      } else {
+        logger.error(
+          { err, to, code: err.code, response: err.response },
+          "[email] Failed to send password reset email via Google/Gmail SMTP"
+        );
+      }
+    }
+  }
+
+  // Fallback when sending was skipped or failed: log reset URL for testing/debugging
+  logger.warn(
+    { to },
+    `[email] Password reset link (dev / testing fallback): ${resetUrl}`
+  );
+  return { skipped: true, ok: false };
 }
