@@ -6,10 +6,13 @@ This guide walks you through deploying both the **Backend** and **Frontend** on 
 
 ## Active Deployed URLs & Verified Login Credentials
 
-### Active Deployments
-- **Live Frontend**: [https://frontend-three-alpha-37.vercel.app](https://frontend-three-alpha-37.vercel.app)
-- **Live Backend API**: [https://backend-omega-eight-o7x5wdq69o.vercel.app/api](https://backend-omega-eight-o7x5wdq69o.vercel.app/api)
-- **Backend Health Check**: [https://backend-omega-eight-o7x5wdq69o.vercel.app/api/health](https://backend-omega-eight-o7x5wdq69o.vercel.app/api/health)
+### Active Deployments (Production)
+- **Live Frontend (Primary)**: [https://frontend-sravans-projects-d52b9dc4.vercel.app](https://frontend-sravans-projects-d52b9dc4.vercel.app)
+- **Live Frontend (Alias)**: [https://frontend-three-alpha-37.vercel.app](https://frontend-three-alpha-37.vercel.app)
+- **Live Backend API**: [https://backend-sravans-projects-d52b9dc4.vercel.app/api](https://backend-sravans-projects-d52b9dc4.vercel.app/api)
+- **Backend Health Check**: [https://backend-sravans-projects-d52b9dc4.vercel.app/api/health](https://backend-sravans-projects-d52b9dc4.vercel.app/api/health)
+
+*(Note: Always share and open the primary production link above. Avoid sharing temporary commit preview hashes like `frontend-pbwvzc81b-...` as those are static snapshots from prior commits).*
 
 ### Verified Login Credentials (all passwords: `password123`)
 | Role | Email | Password |
@@ -20,7 +23,7 @@ This guide walks you through deploying both the **Backend** and **Frontend** on 
 | **Employee** | `poojasulgekar20@gmail.com` | `password123` |
 | **Employee** | `aishwarya.antre21@gmail.com` | `password123` |
 
-*(Tip: The login page on the deployed frontend includes quick-fill buttons for instant 1-click credential entry).*
+*(Tip: The login page includes quick-fill buttons for instant 1-click credential entry).*
 
 ---
 
@@ -72,14 +75,14 @@ The backend is configured with a serverless entrypoint (`backend/api/index.js`) 
 | `JWT_REFRESH_REMEMBER_ME_EXPIRES_IN` | `60d` |
 | `SEED_DEMO_DATA` | `true` |
 | `SEED_USER_PASSWORD` | `password123` |
-| `CLIENT_ORIGIN` | `https://*.vercel.app,https://frontend-three-alpha-37.vercel.app` |
+| `CLIENT_ORIGIN` | `https://*.vercel.app,https://frontend-sravans-projects-d52b9dc4.vercel.app,https://frontend-three-alpha-37.vercel.app` |
 | `BREVO_API_KEY` | *(Optional)* Brevo API key for forgot-password reset emails |
 | `BREVO_FROM_EMAIL` | `Teamora <greathire849@gmail.com>` |
 
 5. Click **Deploy**.
 6. When deployment finishes, verify it by visiting:
    ```text
-   https://backend-omega-eight-o7x5wdq69o.vercel.app/api/health
+   https://backend-sravans-projects-d52b9dc4.vercel.app/api/health
    ```
    You should see: `{"success":true,"message":"GreatHire Teamora API is running"}`.
 
@@ -100,7 +103,7 @@ The backend is configured with a serverless entrypoint (`backend/api/index.js`) 
 
 | Variable Name | Value |
 |---|---|
-| `VITE_API_BASE_URL` | `https://backend-omega-eight-o7x5wdq69o.vercel.app/api` |
+| `VITE_API_BASE_URL` | `https://backend-sravans-projects-d52b9dc4.vercel.app/api` |
 
 5. Click **Deploy**.
 
@@ -119,11 +122,12 @@ Because Vercel serverless functions run across dynamic IP ranges:
 
 ## 5. Verification & Smoke Testing
 
-1. Open your live frontend: [https://frontend-three-alpha-37.vercel.app](https://frontend-three-alpha-37.vercel.app)
-2. Click **Admin Demo** (or type `admin@greathire.com` / `password123`).
+1. Open your live frontend: [https://frontend-sravans-projects-d52b9dc4.vercel.app](https://frontend-sravans-projects-d52b9dc4.vercel.app)
+2. Click **Admin Demo** (or type `admin@greathire.com` / `password123` or `sravanpilla1809@gmail.com` / `password123`).
 3. Click **Sign In**.
 4. Verify that:
    - Dashboard statistics and overview cards load properly.
    - Employees list page loads.
    - Attendance page loads.
+   - Notifications page loads and notifications delete smoothly.
    - Messages channels and communication work.
