@@ -14,7 +14,8 @@ const CHECKED_IN_STATES = ["Working", "On Break"];
 
 function SidebarContent({ pathname, closeMobile, items, isAdmin, handleClockIn, handleLogout, isCheckedIn, currentStatus, user }) {
   return (
-<aside className="flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden bg-slate-900 px-6 py-5">        <div className="flex items-center justify-between gap-3 px-1">
+<aside className="flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden bg-slate-900 px-6 py-3"> 
+         <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-dark text-primary-foreground ring-2 ring-white ring-offset-2 ring-offset-black dark:bg-slate-900/10 text-white">
             <span className="text-sm font-extrabold">≫</span>
@@ -27,42 +28,47 @@ function SidebarContent({ pathname, closeMobile, items, isAdmin, handleClockIn, 
           <X className="h-5 w-5" />
         </button>
       </div>
-
-<nav className="mt-8 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain pl-4 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {items.map((item) => (
+<nav className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain pl-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">    
+          {items.map((item) => (
           <NavItem key={item.label} {...item} active={pathname.startsWith(item.href)} />
         ))}
       </nav>
-
-<div className="mt-auto shrink-0 border-t border-white/10 pl-4 pt-4 pb-2 space-y-1.5">
-        <NavItem icon={Settings} label="Settings" href="/profile" active={pathname === "/profile"} />
-
-        {!isAdmin && (
-          <>
-            <div className="-ml-4">
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-600/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleClockIn}
-                disabled={isCheckedIn}
-                title={isCheckedIn ? `Already ${currentStatus}` : undefined}
-              >
-                {isCheckedIn ? currentStatus : "Clock In Now"}
-              </Button>
-            </div>
-            <NavItem icon={HelpCircle} label="Help Center" href="/support" active={pathname === "/support"} />
-          </>
-        )}
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="group relative flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-slate-400 dark:text-slate-500 transition-colors hover:bg-[#1E293B] dark:hover:bg-[#1E293B] hover:text-slate-200"
+<div className="mt-auto shrink-0 border-t border-white/10 pl-4 pt-1 pb-2">
+  <NavItem
+    icon={Settings}
+    label="Settings"
+    href="/profile"
+    active={pathname === "/profile"}
+  />
+{!isAdmin && (
+    <>
+      <div className="-ml-4">
+        <Button
+          className="w-full bg-blue-600 hover:bg-blue-600/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleClockIn}
+          disabled={isCheckedIn}
+          title={isCheckedIn ? `Already ${currentStatus}` : undefined}
         >
-          <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-          <span>Logout</span>
-        </button>
+          {isCheckedIn ? currentStatus : "Clock In Now"}
+        </Button>
       </div>
-    </aside>
+  <NavItem
+        icon={HelpCircle}
+        label="Help Center"
+        href="/support"
+        active={pathname === "/support"}
+      />
+    </>
+  )}
+<button
+    type="button"
+    onClick={handleLogout}
+className="flex min-h-[44px] w-full shrink-0 items-center gap-3 rounded-lg px-3.5 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-[#1E293B] hover:text-white"  >
+    <LogOut className="h-[18px] w-[18px] shrink-0" />
+    <span>Logout</span>
+  </button>
+</div>
+</aside>
   );
 }
 
@@ -143,7 +149,12 @@ export default function MasterSidebar() {
         />
       </div>
 
-      <aside className={`fixed inset-y-0 left-0 z-50 flex h-screen w-[280px] shrink-0 transform bg-slate-900 transition-transform duration-300 ease-in-out lg:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+
+<aside
+  className={`fixed inset-y-0 left-0 z-50 flex h-dvh max-h-dvh w-[280px] min-h-0 shrink-0 transform overflow-hidden bg-slate-900 transition-transform duration-300 ease-in-out lg:hidden ${
+    mobileOpen ? "translate-x-0" : "-translate-x-full"
+  }`}
+>
         <SidebarContent
           pathname={pathname}
           closeMobile={() => setMobileOpen(false)}
