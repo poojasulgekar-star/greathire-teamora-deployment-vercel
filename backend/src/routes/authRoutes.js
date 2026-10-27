@@ -19,7 +19,8 @@ let router = Router();
 
 router.post("/register", authLimiter, validate(registerSchema), asyncHandler(authController.register));
 router.post("/login", authLimiter, validate(loginSchema), asyncHandler(authController.login));
-router.post("/refresh", authLimiter, validate(refreshSchema), asyncHandler(authController.refresh));
+// Note: /refresh is used periodically by active sessions; do not place it under authLimiter
+router.post("/refresh", validate(refreshSchema), asyncHandler(authController.refresh));
 router.post("/logout", validate(logoutSchema), asyncHandler(authController.logout));
 router.get("/me", requireAuth, asyncHandler(authController.getMe));
 router.post(
@@ -38,7 +39,7 @@ if (googleEnabled) {
     passport.authenticate("google", { session: false, failureRedirect: "/api/auth/oauth/failure" }),
     asyncHandler(async (req, res) => {
       let { token } = await authController.issueOAuthToken(req.user.email, req.user.name);
-      let clientUrl = getPrimaryClientOrigin();
+      let clientUrl = getPrimaryClientOrigin(req);
       res.redirect(`${clientUrl}/dashboard?token=${token}`);
     })
   );
@@ -59,7 +60,7 @@ if (microsoftEnabled) {
     passport.authenticate("microsoft", { session: false, failureRedirect: "/api/auth/oauth/failure" }),
     asyncHandler(async (req, res) => {
       let { token } = await authController.issueOAuthToken(req.user.email, req.user.name);
-      let clientUrl = getPrimaryClientOrigin();
+      let clientUrl = getPrimaryClientOrigin(req);
       res.redirect(`${clientUrl}/dashboard?token=${token}`);
     })
   );
@@ -73,7 +74,7 @@ if (microsoftEnabled) {
 }
 
 router.get("/oauth/failure", (req, res) => {
-  let clientUrl = getPrimaryClientOrigin();
+  let clientUrl = getPrimaryClientOrigin(req);
   res.redirect(`${clientUrl}/login?error=oauth_failed`);
 });
 

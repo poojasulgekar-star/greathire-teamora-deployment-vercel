@@ -19,7 +19,18 @@ function strip(doc) {
 export const UsersStore = {
   async findByEmail(email) {
     if (!email) return null;
-    return strip(await UserModel.findOne({ email: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") }).lean());
+    let cleanEmail = String(email).trim().toLowerCase();
+    let escaped = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    let doc = await UserModel.findOne({ email: new RegExp(`^${escaped}$`, "i") }).lean();
+
+    // Fallback support for admin alias (admin@greathire.com and greathire849@gmail.com)
+    if (!doc && (cleanEmail === "greathire849@gmail.com" || cleanEmail === "admin@greathire.com")) {
+      doc = await UserModel.findOne({
+        email: { $in: [/^admin@greathire\.com$/i, /^greathire849@gmail\.com$/i] },
+      }).lean();
+    }
+
+    return strip(doc);
   },
   async findById(id) {
     return strip(await UserModel.findOne({ id }).lean());
@@ -32,7 +43,7 @@ export const UsersStore = {
       id: generateId("user"),
       employeeId: employeeId || null,
       name,
-      email,
+      email: String(email).trim().toLowerCase(),
       passwordHash,
       role,
       createdAt: new Date().toISOString(),

@@ -1,15 +1,15 @@
 // Thin fetch wrapper around the GreatHire Teamora backend API.
-// Base URL comes from VITE_API_BASE_URL (see .env.example) so the Vercel/
-// React shell can point at a hosted Render API in production.
-
-// const API_BASE_URL =
-//   import.meta.env.VITE_API_BASE_URL ||
-//   (import.meta.env.PROD ? "https://greathire-1.onrender.com" : "http://localhost:5000/api");
+// Base URL comes from VITE_API_BASE_URL (see .env.example).
+// In production on Vercel:
+// - Uses VITE_API_BASE_URL if explicitly set.
+// - Falls back to the deployed backend on Vercel:
+//   "https://backend-sravans-projects-d52b9dc4.vercel.app/api"
+// - In local dev: defaults to "http://localhost:5000/api".
 
 const configuredApiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD
-    ? "https://greathire-teamora-deployment-backend.onrender.com/api"
+    ? "https://backend-sravans-projects-d52b9dc4.vercel.app/api"
     : "http://localhost:5000/api");
 
 const normalizedApiBaseUrl = configuredApiBaseUrl.replace(/\/+$/, "");
@@ -44,15 +44,27 @@ async function request(path, { method = "GET", body, params, headers, raw = fals
   }
 
   let token = getToken();
-  let res = await fetch(url.toString(), {
-    method,
-    headers: {
-      ...(body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(url.toString(), {
+      method,
+      headers: {
+        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    if (err instanceof TypeError || err.name === "TypeError") {
+      throw new ApiError(
+        `Unable to reach backend server (${API_BASE_URL}). Please verify that your backend server is running (port 5000) or check network connection.`,
+        0,
+        { originalError: err.message }
+      );
+    }
+    throw err;
+  }
 
  if (raw) {
   if (!res.ok) {

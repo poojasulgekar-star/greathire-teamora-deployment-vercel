@@ -1,232 +1,133 @@
-I’ll summarize the exact deployment checklist from the codebase shape and the connection assumptions so you can move from local development to Render/Vercel with Atlas safely.
+# Complete Vercel Deployment Guide (100% Vercel — Render Completely Removed)
 
-## Before deploying
-
-You need to make these changes in the current project so the backend can be served from Render and the frontend can be served from Vercel.
-
-### 1) Backend: make the API deploy-safe
-
-In your backend environment, replace the current development-only MongoDB setting and deploy settings:
-
-- Use the live Atlas connection string in the backend environment instead of localhost MongoDB.
-- Set production auth and CORS values.
-
-Relevant places:
-- .env
-- .env.example
-- app.js
-- server.js
-
-Set these values:
-
-- `MONGODB_URI`
-  - Example:
-    ```env
-    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/greathire?retryWrites=true&w=majority
-    ```
-- `JWT_SECRET`
-  - Use a long random secret.
-- `CLIENT_ORIGIN`
-  - Set this to your Vercel frontend URL:
-    ```env
-    CLIENT_ORIGIN=https://your-app.vercel.app
-    ```
-- `NODE_ENV=production` in Render
-- Optional OAuth callback URLs should point at Render, not localhost:
-  ```env
-  GOOGLE_CALLBACK_URL=https://your-render-backend.onrender.com/api/auth/oauth/google/callback
-  MICROSOFT_CALLBACK_URL=https://your-render-backend.onrender.com/api/auth/oauth/microsoft/callback
-  ```
-
-### 2) Backend: Render setup
-
-In Render, create a Web Service for the backend:
-
-- Root directory: the backend folder
-- Runtime: Node.js
-- Build command:
-  ```bash
-  npm install
-  ```
-- Start command:
-  ```bash
-  npm start
-  ```
-- Add environment variables:
-  - `MONGODB_URI`
-  - `JWT_SECRET`
-  - `CLIENT_ORIGIN`
-  - optional OAuth keys
-  - `PORT` is usually auto-supplied by Render
-
-Render must expose the API on a public URL such as:
-
-```text
-https://your-render-backend.onrender.com
-```
-
-The API base path is `/api`, so the final API endpoint becomes:
-
-```text
-https://your-render-backend.onrender.com/api
-```
+This guide walks you through deploying both the **Backend** and **Frontend** on **Vercel**, especially if your previous Vercel account was deleted and you are setting it up fresh with your active Vercel account.
 
 ---
 
-### 3) Frontend: make the browser call the Render API
+## Active Deployed URLs & Verified Login Credentials
 
-The frontend API client currently reads a base URL from the Vite environment and defaults to localhost only in local dev:
+### Active Deployments (Production)
+- **Live Frontend (Primary)**: [https://frontend-sravans-projects-d52b9dc4.vercel.app](https://frontend-sravans-projects-d52b9dc4.vercel.app)
+- **Live Frontend (Alias)**: [https://frontend-three-alpha-37.vercel.app](https://frontend-three-alpha-37.vercel.app)
+- **Live Backend API**: [https://backend-sravans-projects-d52b9dc4.vercel.app/api](https://backend-sravans-projects-d52b9dc4.vercel.app/api)
+- **Backend Health Check**: [https://backend-sravans-projects-d52b9dc4.vercel.app/api/health](https://backend-sravans-projects-d52b9dc4.vercel.app/api/health)
 
-- apiClient.js
-- .env.example
+*(Note: Always share and open the primary production link above. Avoid sharing temporary commit preview hashes like `frontend-pbwvzc81b-...` as those are static snapshots from prior commits).*
 
-Set this before deploy:
+### Verified Login Credentials (all passwords: `password123`)
+| Role | Email | Password |
+|---|---|---|
+| **Admin (Primary)** | `admin@greathire.com` | `password123` |
+| **Admin (Sravan)** | `sravanpilla1809@gmail.com` | `password123` |
+| **Admin (GreatHire)** | `greathire849@gmail.com` | `password123` |
+| **Employee** | `poojasulgekar20@gmail.com` | `password123` |
+| **Employee** | `aishwarya.antre21@gmail.com` | `password123` |
 
-```env
-VITE_API_BASE_URL=https://your-render-backend.onrender.com/api
-```
-
-You should put that into Vercel environment variables, not inside source control.
-
-### 4) Frontend: Vercel setup
-
-In Vercel, create a web app deployment for the frontend folder:
-
-- Root directory: the frontend folder
-- Build command:
-  ```bash
-  npm run build
-  ```
-- Output directory:
-  ```bash
-  dist
-  ```
-
-Then add environment variables in Vercel:
-
-```env
-VITE_API_BASE_URL=https://your-render-backend.onrender.com/api
-```
+*(Tip: The login page includes quick-fill buttons for instant 1-click credential entry).*
 
 ---
 
-### 5) Atlas network access
+## 1. Handling the Deleted Vercel Account
 
-Because Atlas is cloud-based, your Render backend must be allowed access to it.
-
-In MongoDB Atlas:
-
-- Open Network Access
-- Allow connections from:
-  - Your Render backend public IP if static and whitelisted
-  - Or `0.0.0.0/0` if you want easier temporary access
-- Confirm your database user has the correct role (read/write)
-
----
-
-## After deploying
-
-Once both are live:
-
-### Backend on Render
-
-- Open the Render service logs.
-- Hit the health endpoint:
-  ```text
-  https://your-render-backend.onrender.com/api/health
-  ```
-- Confirm it returns a success payload.
-
-### Frontend on Vercel
-
-- Open the deployed frontend URL.
-- Log in using the seeded credentials or user accounts from your DB.
-- Check that API calls reach Render successfully.
-
-### Common smoke tests
-
-- Login request to `/api/auth/login`
-- Dashboard fetch to `/api/dashboard`
-- Employee list request to `/api/employees`
-- Any chart/report call
+If your previous Vercel account was deleted:
+1. **Unlink / Clear any old local links**:
+   - Any previous `.vercel` folders have been added to `.gitignore` and deleted.
+   - If you use the Vercel CLI locally in terminal, log out and log in to your new account:
+     ```bash
+     npx vercel logout
+     npx vercel login
+     ```
+2. **Push your code to GitHub**:
+   - Commit all the latest changes and push them to your GitHub repository:
+     ```bash
+     git add .
+     git commit -m "Configure full Vercel deployment and resolve login reliability"
+     git push origin main
+     ```
+3. **Log in to your new Vercel Account**:
+   - Go to [vercel.com](https://vercel.com) and log in with your current account.
+   - Ensure your GitHub account is connected to Vercel.
 
 ---
 
-## Local development
+## 2. Deploying Backend to Vercel
 
-If you want to run locally instead of deploying:
+The backend is configured with a serverless entrypoint (`backend/api/index.js`) and routing (`backend/vercel.json`).
 
-### Backend local
+### Step-by-Step in Vercel Dashboard:
+1. On your Vercel Dashboard, click **Add New...** > **Project**.
+2. Select your repository: `greathire-teamora-deployment-vercel` and click **Import**.
+3. Configure Project Settings:
+   - **Project Name**: e.g., `backend`
+   - **Framework Preset**: Other
+   - **Root Directory**: Click **Edit** and choose `backend`.
+4. Open the **Environment Variables** section and add the following:
 
-From the backend folder:
+| Variable Name | Value / Description |
+|---|---|
+| `NODE_ENV` | `production` |
+| `MONGODB_URI` | Your live MongoDB Atlas connection string (e.g. `mongodb+srv://greathire_backend:greathireisgreat@cluster0.d6kzzrb.mongodb.net/teamora?retryWrites=true&w=majority`) |
+| `MONGODB_DB_NAME` | `teamora` |
+| `JWT_SECRET` | A secure long random secret (e.g., `7fGS9kL!2mP&8vX1qW5zR0tY3uI6oO4pA9sD1fG8`) |
+| `JWT_EXPIRES_IN` | `1d` |
+| `JWT_REMEMBER_ME_EXPIRES_IN` | `30d` |
+| `JWT_REFRESH_EXPIRES_IN` | `7d` |
+| `JWT_REFRESH_REMEMBER_ME_EXPIRES_IN` | `60d` |
+| `SEED_DEMO_DATA` | `true` |
+| `SEED_USER_PASSWORD` | `password123` |
+| `CLIENT_ORIGIN` | `https://*.vercel.app,https://frontend-sravans-projects-d52b9dc4.vercel.app,https://frontend-three-alpha-37.vercel.app` |
+| `BREVO_API_KEY` | *(Optional)* Brevo API key for forgot-password reset emails |
+| `BREVO_FROM_EMAIL` | `Teamora <greathire849@gmail.com>` |
 
-```bash
-npm install
-npm run dev
-```
-
-In local backend env, use either:
-
-```env
-MONGODB_URI=mongodb://127.0.0.1:27017/greathire
-```
-
-or a live Atlas URI if you want the local app to use the same cloud DB.
-
-Local backend URL:
-
-```text
-http://localhost:5000
-```
-
-Local health URL:
-
-```text
-http://localhost:5000/api/health
-```
-
-### Frontend local
-
-In the frontend:
-
-```bash
-npm install
-npm run dev
-```
-
-Use Vite defaults, and set:
-
-```env
-VITE_API_BASE_URL=http://localhost:5000/api
-```
-
-Then open the local frontend:
-
-```text
-http://localhost:5173
-```
+5. Click **Deploy**.
+6. When deployment finishes, verify it by visiting:
+   ```text
+   https://backend-sravans-projects-d52b9dc4.vercel.app/api/health
+   ```
+   You should see: `{"success":true,"message":"GreatHire Teamora API is running"}`.
 
 ---
 
-## What you must not forget
+## 3. Deploying Frontend to Vercel
 
-- Do not commit live secrets.
-- Do not leave the backend pointing at `localhost` in production.
-- Do not leave Vercel or Render pointing at the wrong domain.
-- Do not deploy with an empty `CLIENT_ORIGIN` in production.
-- Make sure Atlas is reachable from Render.
+### Step-by-Step in Vercel Dashboard:
+1. Go back to your Vercel Dashboard, click **Add New...** > **Project**.
+2. Select the **same** repository: `greathire-teamora-deployment-vercel` and click **Import**.
+3. Configure Project Settings:
+   - **Project Name**: e.g., `frontend`
+   - **Framework Preset**: **Vite** (Vercel will detect it automatically)
+   - **Root Directory**: Click **Edit** and choose `frontend`.
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Open the **Environment Variables** section and add:
+
+| Variable Name | Value |
+|---|---|
+| `VITE_API_BASE_URL` | `https://backend-sravans-projects-d52b9dc4.vercel.app/api` |
+
+5. Click **Deploy**.
 
 ---
 
-## Minimal deployment checklist
+## 4. MongoDB Atlas Network Permission
 
-1. Atlas URI prepared.
-2. Backend Render service configured.
-3. Backend environment variables filled.
-4. `CLIENT_ORIGIN` set to the Vercel frontend domain.
-5. Frontend Vercel env has `VITE_API_BASE_URL` pointing to Render.
-6. Atlas IP/network permission configured.
-7. Backend health check passes.
-8. Login and dashboard tests pass through the live API.
+Because Vercel serverless functions run across dynamic IP ranges:
+1. Go to [MongoDB Atlas](https://cloud.mongodb.com/).
+2. In the left navigation, click **Network Access** under Security.
+3. Click **Add IP Address**.
+4. Select **Allow Access from Anywhere** (`0.0.0.0/0`).
+5. Click **Confirm**.
 
-If you want, I can also generate the actual Render and Vercel environment variable sections for you in a copy-paste format.
+---
+
+## 5. Verification & Smoke Testing
+
+1. Open your live frontend: [https://frontend-sravans-projects-d52b9dc4.vercel.app](https://frontend-sravans-projects-d52b9dc4.vercel.app)
+2. Click **Admin Demo** (or type `admin@greathire.com` / `password123` or `sravanpilla1809@gmail.com` / `password123`).
+3. Click **Sign In**.
+4. Verify that:
+   - Dashboard statistics and overview cards load properly.
+   - Employees list page loads.
+   - Attendance page loads.
+   - Notifications page loads and notifications delete smoothly.
+   - Messages channels and communication work.

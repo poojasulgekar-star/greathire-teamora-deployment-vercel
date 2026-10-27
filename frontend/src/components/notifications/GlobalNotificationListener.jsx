@@ -38,12 +38,12 @@ export default function GlobalNotificationListener() {
           filter: "all",
           search: "",
         });
-        console.log("Global notifications response:", response);
+        const items = Array.isArray(response) ? response : response?.data || [];
 
-        if (!active || !Array.isArray(response)) return;
+        if (!active) return;
 
         const currentIds = new Set(
-          response.map(getId).filter((id) => id != null).map(String)
+          items.map(getId).filter((id) => id != null).map(String)
         );
 
         // First poll records existing notifications without showing old popups.
@@ -52,7 +52,7 @@ export default function GlobalNotificationListener() {
           return;
         }
 
-        const newItem = response.find((item) => {
+        const newItem = items.find((item) => {
           const id = getId(item);
           return id != null && !previousIds.current.has(String(id));
         });

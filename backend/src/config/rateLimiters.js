@@ -4,24 +4,25 @@ import rateLimit from "express-rate-limit";
 function limitHandler(req, res) {
   res.status(429).json({
     success: false,
-    error: "Too many requests. Please try again later.",
+    error: "Too many login attempts. Please wait a minute and try again.",
   });
 }
 
-// Login/register: generous enough for real users retrying a typo, tight
-// enough to blunt credential-stuffing and account-enumeration attempts.
+// Login/register: generous for genuine users and retries, while still defending against brute force.
+// skipSuccessfulRequests ensures legitimate logins never count against the retry allowance.
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === "test" ? 100 : 10,
+  max: process.env.NODE_ENV === "test" ? 100 : 60,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   handler: limitHandler,
 });
 
-// Forgot-password: stricter, since each hit can trigger an outbound email.
+// Forgot-password: each hit can trigger an outbound email.
 export const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5,
+  max: process.env.NODE_ENV === "test" ? 100 : 15,
   standardHeaders: true,
   legacyHeaders: false,
   handler: limitHandler,

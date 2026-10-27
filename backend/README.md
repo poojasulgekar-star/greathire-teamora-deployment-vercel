@@ -61,7 +61,7 @@ The production architecture is:
              +-------------------+
              | Node.js + Express |
              | Backend API       |
-             | Render / Railway  |
+             | Vercel Serverless |
              +---------+---------+
                        |
                        | MongoDB URI
@@ -308,7 +308,7 @@ MONGODB_URI=mongodb://127.0.0.1:27017/greathire
 For production, set `CLIENT_ORIGIN` in the backend hosting environment to the
 exact frontend origin(s), including `https://` and separated by commas if more
 than one frontend should be allowed. The first origin is used for OAuth
-redirects and password-reset links. After changing it in Render, redeploy the
+redirects and password-reset links. After changing it in Vercel, redeploy the
 backend so the new CORS allowlist takes effect.
 
 The backend connects using:
@@ -833,17 +833,14 @@ MongoDB Atlas
 
 The backend can be deployed on platforms such as:
 
-* Render
-* Railway
-* AWS
-* Azure
-* Google Cloud
+* Vercel (Serverless Functions)
+* Railway / AWS / Azure / Google Cloud
 
 ---
 
-# 24. Render Deployment
+# 24. Vercel Deployment
 
-For a Render Web Service:
+For deploying the backend to Vercel:
 
 ### Root Directory
 
@@ -851,19 +848,11 @@ For a Render Web Service:
 backend
 ```
 
-### Build Command
+### Serverless Handler
 
-```bash
-npm install
-```
+The backend includes `backend/api/index.js` and `backend/vercel.json` pre-configured to run the Express API on Vercel.
 
-### Start Command
-
-```bash
-npm start
-```
-
-Add the required environment variables in the Render dashboard.
+Add the required environment variables in the Vercel dashboard.
 
 Example:
 
@@ -872,7 +861,7 @@ NODE_ENV=production
 
 MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net/greathire?retryWrites=true&w=majority
 
-CLIENT_ORIGIN=https://your-frontend-domain.com
+CLIENT_ORIGIN=https://your-frontend-project.vercel.app
 
 JWT_SECRET=YOUR_LONG_RANDOM_SECRET
 JWT_EXPIRES_IN=1d
@@ -890,24 +879,18 @@ Do not commit these production values to GitHub.
 
 # 25. Frontend Configuration
 
-The React frontend should use the deployed backend URL instead of localhost.
+The React frontend uses the deployed backend URL instead of localhost.
 
 Local development:
 
 ```env
-VITE_API_URL=http://localhost:5000
+VITE_API_BASE_URL=http://localhost:5000/api
 ```
 
-Production:
+Production on Vercel:
 
 ```env
-VITE_API_URL=https://your-backend-domain.com
-```
-
-For example:
-
-```env
-VITE_API_URL=https://greathire-teamora-api.onrender.com
+VITE_API_BASE_URL=https://your-backend-project.vercel.app/api
 ```
 
 After changing the environment variable, rebuild/redeploy the frontend.

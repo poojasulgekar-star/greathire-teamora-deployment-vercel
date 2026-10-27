@@ -7,10 +7,19 @@ import YAML from "yaml";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { getClientOrigins } from "./config/clientOrigins.js";
+import { getClientOrigins, isOriginAllowed } from "./config/clientOrigins.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const openapiDocument = YAML.parse(readFileSync(join(__dirname, "..", "openapi.yaml"), "utf8"));
+let openapiDocument = {};
+try {
+  openapiDocument = YAML.parse(readFileSync(join(__dirname, "..", "openapi.yaml"), "utf8"));
+} catch (err) {
+  openapiDocument = {
+    openapi: "3.0.0",
+    info: { title: "GreatHire Teamora API", version: "1.0.0" },
+    paths: {},
+  };
+}
 
 import { logger } from "./config/logger.js";
 import passport from "./config/passport.js";
@@ -33,6 +42,9 @@ import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 export function createApp() {
   let app = express();
 
+  // Trust first proxy hop (Vercel reverse proxy) so req.ip and rate-limiting work properly
+  app.set("trust proxy", 1);
+
   app.use(helmet());
   app.use(
     pinoHttp({
@@ -51,11 +63,12 @@ export function createApp() {
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin || clientOrigins.includes(origin)) {
+        if (!origin || isOriginAllowed(origin)) {
           callback(null, true);
           return;
         }
 
+        let clientOrigins = getClientOrigins();
         logger.warn({ origin, allowed: clientOrigins }, "[cors] denied origin");
         callback(new ApiError(403, `Origin ${origin} is not allowed by CORS`));
       },

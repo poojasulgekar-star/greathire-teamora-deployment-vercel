@@ -7,10 +7,23 @@ let isConnected = false;
 
 /**
  * Connects to MongoDB using MONGODB_URI from the environment.
- * Call once at boot, before the server starts accepting requests.
+ * Reconnects gracefully if an existing serverless socket was closed by Atlas.
  */
 export async function connectDB() {
-  if (isConnected) return mongoose.connection;
+  if (mongoose.connection && mongoose.connection.readyState === 1) {
+    isConnected = true;
+    return mongoose.connection;
+  }
+
+  // If connection attempt is already in flight, wait for it
+  if (mongoose.connection && mongoose.connection.readyState === 2) {
+    await new Promise((resolve, reject) => {
+      mongoose.connection.once("connected", resolve);
+      mongoose.connection.once("error", reject);
+    });
+    isConnected = true;
+    return mongoose.connection;
+  }
 
   let uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -19,6 +32,10 @@ export async function connectDB() {
     );
   }
 
+  mongoose.connection.removeAllListeners("connected");
+  mongoose.connection.removeAllListeners("error");
+  mongoose.connection.removeAllListeners("disconnected");
+
   mongoose.connection.on("connected", () => {
     logger.info({ db: mongoose.connection.name }, "[mongo] connected");
   });
@@ -26,11 +43,15 @@ export async function connectDB() {
     logger.error({ err }, "[mongo] connection error");
   });
   mongoose.connection.on("disconnected", () => {
+    isConnected = false;
     logger.warn("[mongo] disconnected");
   });
 
   const options = {
-    serverSelectionTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 8000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
   };
   if (process.env.MONGODB_DB_NAME) {
     options.dbName = process.env.MONGODB_DB_NAME;

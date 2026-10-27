@@ -6,10 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import SocialLoginButton from "./SocialLoginButton";
-import { GoogleIcon, MicrosoftIcon } from "./BrandIcons";
 import { useAuth } from "@/lib/AuthContext";
-import { API_BASE_URL } from "@/lib/apiClient";
 
 export default function LoginForm() {
   let navigate = useNavigate();
@@ -21,49 +18,47 @@ export default function LoginForm() {
   let [error, setError] = useState("");
   let [submitting, setSubmitting] = useState(false);
 
-  
-async function handleSubmit(e) {
-  e.preventDefault();
+  async function handleSubmit(e) {
+    e.preventDefault();
 
-  // Prevent multiple simultaneous login requests
-  if (submitting) return;
+    // Prevent multiple simultaneous login requests
+    if (submitting) return;
 
-  const normalizedEmail = email.trim();
+    const normalizedEmail = email.trim();
 
-  if (!normalizedEmail || !password) {
-    setError("Please enter your email and password.");
-    return;
-  }
-
-  setError("");
-  setSubmitting(true);
-
-  try {
-    const loggedInUser = await login({
-      email: normalizedEmail,
-      password,
-      rememberMe,
-    });
-
-    if (!loggedInUser) {
-      throw new Error("Login succeeded but user details were not returned.");
+    if (!normalizedEmail || !password) {
+      setError("Please enter your email and password.");
+      return;
     }
 
-    navigate(
-      loggedInUser.role === "admin"
-        ? "/dashboard"
-        : "/employee-dashboard",
-      { replace: true }
-    );
-  } catch (err) {
-    setError(
-      err.message || "Unable to sign in. Please try again."
-    );
-  } finally {
-    setSubmitting(false);
-  }
-}
+    setError("");
+    setSubmitting(true);
 
+    try {
+      const loggedInUser = await login({
+        email: normalizedEmail,
+        password,
+        rememberMe,
+      });
+
+      if (!loggedInUser) {
+        throw new Error("Login succeeded but user details were not returned.");
+      }
+
+      navigate(
+        loggedInUser.role === "admin"
+          ? "/dashboard"
+          : "/employee-dashboard",
+        { replace: true }
+      );
+    } catch (err) {
+      setError(
+        err.message || "Unable to sign in. Please check your credentials and try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit} className="p-8 sm:p-9">
@@ -76,13 +71,50 @@ async function handleSubmit(e) {
         Sign in using your company account.
       </p>
 
+      {/* Quick Demo Fill Buttons */}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setEmail("admin@greathire.com");
+            setPassword("password123");
+            setError("");
+          }}
+          className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition"
+        >
+          🔑 Admin Demo
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEmail("sravanpilla1809@gmail.com");
+            setPassword("password123");
+            setError("");
+          }}
+          className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition"
+        >
+          👤 Sravan
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEmail("poojasulgekar20@gmail.com");
+            setPassword("password123");
+            setError("");
+          }}
+          className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition"
+        >
+          👩‍💼 Employee Demo
+        </button>
+      </div>
+
       {error && (
         <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
           {error}
         </div>
       )}
 
-      <div className="mt-7 space-y-2">
+      <div className="mt-5 space-y-2">
         <Label htmlFor="email">Work Email</Label>
         <Input
           id="email"
