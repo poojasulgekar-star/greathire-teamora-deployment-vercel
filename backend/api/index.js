@@ -31,8 +31,12 @@ export default async function handler(req, res) {
       initPromise = bootstrap();
     }
     await initPromise;
+    // Ensure DB connection is active for warm containers whose socket might have timed out
+    await connectDB();
     return app(req, res);
   } catch (err) {
+    // Reset so the next incoming request can retry rather than permanently caching rejection
+    initPromise = null;
     logger.error({ err }, "[serverless] Initialization error");
     return res.status(500).json({ error: "Backend failed to initialize", message: err.message });
   }

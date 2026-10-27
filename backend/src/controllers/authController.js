@@ -25,12 +25,13 @@ export let authController = {
   // POST /api/auth/register
   register: async (req, res) => {
     let { name, email, password } = req.body;
-    if (await UsersStore.findByEmail(email)) {
+    let cleanEmail = (email || "").trim();
+    if (await UsersStore.findByEmail(cleanEmail)) {
       throw new ApiError(409, "An account with this email already exists");
     }
 
     let passwordHash = await hashPassword(password);
-    let user = await UsersStore.create({ name, email, passwordHash, role: "employee" });
+    let user = await UsersStore.create({ name, email: cleanEmail, passwordHash, role: "employee" });
     let token = signAccessToken({ sub: user.id, role: user.role });
     let refreshToken = await RefreshTokenStore.issue(user.id, { rememberMe: false });
 
@@ -40,8 +41,9 @@ export let authController = {
   // POST /api/auth/login
   login: async (req, res) => {
     let { email, password, rememberMe } = req.body;
+    let cleanEmail = (email || "").trim();
 
-    let user = await UsersStore.findByEmail(email);
+    let user = await UsersStore.findByEmail(cleanEmail);
     let valid = user ? await comparePassword(password, user.passwordHash) : false;
     if (!user || !valid) throw new ApiError(401, "Invalid email or password");
 
@@ -87,8 +89,9 @@ export let authController = {
   // email alone, so there's no separate admin/employee reset flow.
   forgotPassword: async (req, res) => {
     let { email } = req.body;
+    let cleanEmail = (email || "").trim();
 
-    let user = await UsersStore.findByEmail(email);
+    let user = await UsersStore.findByEmail(cleanEmail);
     // Always respond the same way whether or not the account exists, and do
     // the same amount of work either way, to avoid leaking which emails are
     // registered (timing- and response-based enumeration).
@@ -109,26 +112,30 @@ export let authController = {
     let { token, password } = req.body;
 
     let entry = await UsersStore.consumePasswordResetToken(token);
-    if (!entry) throw new ApiError(400, "This reset link is invalid or has expired. Please request a new one.");
+    if (!entry) {
+      throw new ApiError(400, "Password reset link is invalid or has expired. Please request a new one.");
+    }
 
     let passwordHash = await hashPassword(password);
     await UsersStore.updatePassword(entry.userId, passwordHash);
+
+    // Any existing refresh tokens for this user are now invalid — an attacker
+    // holding a stolen refresh token is cut off the instant the password resets.
     await RefreshTokenStore.revokeAllForUser(entry.userId);
-    res.json({ success: true, message: "Password has been reset. You can now sign in." });
+
+    res.json({ success: true, message: "Password updated successfully. You can now sign in." });
   },
 
-  // Called by the Google/Microsoft OAuth callback routes once passport has verified the profile.
-  issueOAuthToken: async (profileEmail, profileName) => {
-    let user = await UsersStore.findByEmail(profileEmail);
+  // Internal: issues a JWT when an OAuth callback succeeds. Creates an account
+  // on first login if one doesn't exist yet (role: employee).
+  issueOAuthToken: async (email, name) => {
+    let user = await UsersStore.findByEmail(email);
     if (!user) {
-      user = await UsersStore.create({
-        name: profileName || profileEmail,
-        email: profileEmail,
-        passwordHash: null,
-        role: "employee",
-      });
+      // Unusable random hash so the account can't be signed into via password
+      // unless the user goes through the forgot-password flow later.
+      let dummyHash = await hashPassword(Math.random().toString(36) + Date.now());
+      user = await UsersStore.create({ name, email, passwordHash: dummyHash, role: "employee" });
     }
-    let token = signAccessToken({ sub: user.id, role: user.role });
-    return { user: toPublicUser(user), token };
+    return { token: signAccessToken({ sub: user.id, role: user.role }), user: toPublicUser(user) };
   },
 };

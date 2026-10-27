@@ -1,12 +1,16 @@
 // Thin fetch wrapper around the GreatHire Teamora backend API.
 // Base URL comes from VITE_API_BASE_URL (see .env.example).
 // In production on Vercel:
-// - If VITE_API_BASE_URL is set (e.g. separate backend project on Vercel), it uses that.
-// - If unset, it defaults to "/api" (same-domain serverless routing).
+// - Uses VITE_API_BASE_URL if explicitly set.
+// - Falls back to the deployed backend on Vercel:
+//   "https://backend-omega-eight-o7x5wdq69o.vercel.app/api"
+// - In local dev: defaults to "http://localhost:5000/api".
 
 const configuredApiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.PROD ? "/api" : "http://localhost:5000/api");
+  (import.meta.env.PROD
+    ? "https://backend-omega-eight-o7x5wdq69o.vercel.app/api"
+    : "http://localhost:5000/api");
 
 const normalizedApiBaseUrl = configuredApiBaseUrl.replace(/\/+$/, "");
 const API_BASE_URL = /\/api$/i.test(normalizedApiBaseUrl)

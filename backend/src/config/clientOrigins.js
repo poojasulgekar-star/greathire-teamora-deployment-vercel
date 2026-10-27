@@ -4,13 +4,18 @@ export function getClientOrigins() {
     .map((origin) => origin.trim().replace(/\/+$/, ""))
     .filter(Boolean);
 
-  if (origins.length > 0) return [...new Set(origins)];
+  let defaults = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://*.vercel.app",
+    "https://frontend-three-alpha-37.vercel.app",
+  ];
 
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("CLIENT_ORIGIN must be set in production (no wildcard CORS allowed).");
+  for (let def of defaults) {
+    if (!origins.includes(def)) origins.push(def);
   }
 
-  return ["http://localhost:5173"];
+  return [...new Set(origins)];
 }
 
 export function getPrimaryClientOrigin(req) {

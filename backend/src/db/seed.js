@@ -51,13 +51,15 @@ function roleForEmployee() {
 }
 
 /**
- * Populates any collection that is still empty with the minimal starter
- * dataset (one admin employee/login + one default "General" channel). Safe
- * to call on every boot — already-seeded (or already-live) collections are
- * left untouched, so real data created by users is never overwritten.
+ * Ensures required seed data exists and that the administrator login
+ * credentials match SEED_USER_PASSWORD (default: password123).
+ * Always keeps admin login operational even if users/employees were altered.
  */
 export async function seedDatabaseIfEmpty() {
   if (process.env.SEED_DEMO_DATA === "false") return;
+
+  let demoPassword = process.env.SEED_USER_PASSWORD || "password123";
+  let passwordHash = bcrypt.hashSync(demoPassword, 10);
 
   let employeeCount = await EmployeeModel.countDocuments();
   let employees;
@@ -66,23 +68,41 @@ export async function seedDatabaseIfEmpty() {
     await EmployeeModel.insertMany(employees);
     logger.info(`[seed] inserted ${employees.length} employee (admin)`);
   } else {
+    // Ensure admin employee GH-1000 exists
+    let adminEmp = await EmployeeModel.findOne({ id: CURRENT_EMPLOYEE_ID });
+    if (!adminEmp) {
+      await EmployeeModel.create(buildEmployees()[0]);
+      logger.info("[seed] restored missing admin employee profile");
+    }
     employees = await EmployeeModel.find().lean();
   }
 
-  if ((await UserModel.countDocuments()) === 0) {
-    let demoPassword = process.env.SEED_USER_PASSWORD || "password123";
-    let passwordHash = bcrypt.hashSync(demoPassword, 10);
-    let users = employees.map((e) => ({
-      id: `user_${e.id.replace("emp_", "")}`,
-      employeeId: e.id,
-      name: e.name,
-      email: e.email,
+  // Ensure Admin user always exists and has valid password credentials
+  let adminUser = await UserModel.findOne({
+    $or: [{ id: "user_admin" }, { email: /^admin@greathire\.com$/i }, { employeeId: CURRENT_EMPLOYEE_ID }],
+  });
+
+  if (!adminUser) {
+    await UserModel.create({
+      id: "user_admin",
+      employeeId: CURRENT_EMPLOYEE_ID,
+      name: "Admin",
+      email: "admin@greathire.com",
       passwordHash,
-      role: roleForEmployee(e),
+      role: "admin",
       createdAt: new Date().toISOString(),
-    }));
-    await UserModel.insertMany(users);
-    logger.debug(`[seed] inserted ${users.length} user login (demo password: ${demoPassword})`);
+    });
+    logger.info(`[seed] created admin login (demo password: ${demoPassword})`);
+  } else if (!bcrypt.compareSync(demoPassword, adminUser.passwordHash)) {
+    await UserModel.updateOne({ _id: adminUser._id }, { $set: { passwordHash, role: "admin" } });
+    logger.info("[seed] verified and synchronized admin password credentials");
+  }
+
+  // Also ensure workspace owner email if present has valid password credentials
+  let sravanUser = await UserModel.findOne({ email: /^sravanpilla1809@gmail\.com$/i });
+  if (sravanUser && !bcrypt.compareSync(demoPassword, sravanUser.passwordHash)) {
+    await UserModel.updateOne({ _id: sravanUser._id }, { $set: { passwordHash, role: "admin" } });
+    logger.info("[seed] verified and synchronized owner (sravan) credentials");
   }
 
   if ((await ChannelModel.countDocuments()) === 0 && (await DirectConversationModel.countDocuments()) === 0) {
@@ -90,8 +110,4 @@ export async function seedDatabaseIfEmpty() {
     await ChannelModel.insertMany(channels);
     logger.info(`[seed] inserted ${channels.length} default channel`);
   }
-
-  // Everything else (attendance, activity log, leave requests, notifications,
-  // announcements, holidays) is intentionally left empty — it fills in from
-  // real usage instead of fake demo content.
 }

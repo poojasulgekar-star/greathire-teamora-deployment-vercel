@@ -19,7 +19,8 @@ let router = Router();
 
 router.post("/register", authLimiter, validate(registerSchema), asyncHandler(authController.register));
 router.post("/login", authLimiter, validate(loginSchema), asyncHandler(authController.login));
-router.post("/refresh", authLimiter, validate(refreshSchema), asyncHandler(authController.refresh));
+// Note: /refresh is used periodically by active sessions; do not place it under authLimiter
+router.post("/refresh", validate(refreshSchema), asyncHandler(authController.refresh));
 router.post("/logout", validate(logoutSchema), asyncHandler(authController.logout));
 router.get("/me", requireAuth, asyncHandler(authController.getMe));
 router.post(
