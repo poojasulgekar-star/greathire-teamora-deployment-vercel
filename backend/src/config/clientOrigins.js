@@ -8,6 +8,7 @@ export function getClientOrigins() {
     "http://localhost:5173",
     "http://localhost:3000",
     "https://*.vercel.app",
+    "https://frontend-sravans-projects-d52b9dc4.vercel.app",
     "https://frontend-three-alpha-37.vercel.app",
   ];
 
@@ -48,5 +49,5 @@ export function getPrimaryClientOrigin(req) {
   let prodOrigin = allowed.find(
     (o) => !o.includes("*") && !o.includes("localhost") && !o.includes("127.0.0.1")
   );
-  return prodOrigin || "https://frontend-three-alpha-37.vercel.app";
+  return prodOrigin || "https://frontend-sravans-projects-d52b9dc4.vercel.app";
 }

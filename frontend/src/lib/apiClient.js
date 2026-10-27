@@ -3,13 +3,13 @@
 // In production on Vercel:
 // - Uses VITE_API_BASE_URL if explicitly set.
 // - Falls back to the deployed backend on Vercel:
-//   "https://backend-omega-eight-o7x5wdq69o.vercel.app/api"
+//   "https://backend-sravans-projects-d52b9dc4.vercel.app/api"
 // - In local dev: defaults to "http://localhost:5000/api".
 
 const configuredApiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD
-    ? "https://backend-omega-eight-o7x5wdq69o.vercel.app/api"
+    ? "https://backend-sravans-projects-d52b9dc4.vercel.app/api"
     : "http://localhost:5000/api");
 
 const normalizedApiBaseUrl = configuredApiBaseUrl.replace(/\/+$/, "");

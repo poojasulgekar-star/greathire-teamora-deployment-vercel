@@ -419,12 +419,20 @@ async function handleDeleteNotification(item) {
 
   setDeletingId(item.id);
 
+  // Optimistically remove from UI immediately
+  const previousList = [...notifications];
+  setNotifications((prev) => prev.filter((n) => n.id !== item.id));
+
   try {
     await notificationsApi.delete(item.id);
     await refresh();
   } catch (err) {
     console.error("Failed to delete notification:", err);
-    window.alert("Could not delete notification. Please try again.");
+    // If the error status is 404, it was already deleted in the database — no need to restore
+    if (err.status !== 404 && !String(err.message).includes("404")) {
+      setNotifications(previousList);
+      window.alert(err.message || "Could not delete notification. Please try again.");
+    }
   } finally {
     setDeletingId(null);
   }
