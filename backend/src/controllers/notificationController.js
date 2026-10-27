@@ -8,15 +8,26 @@ function resolveEmployeeId(req) {
   return req.user?.employeeId || CURRENT_EMPLOYEE_ID;
 }
 
+function isAdmin(req) {
+  return req.user?.role === "admin";
+}
+
 export let notificationController = {
-  list: (req, res) => {
+  list: async (req, res) => {
     let { filter, search, page, pageSize } = req.query;
-    let result = Notification.list(resolveEmployeeId(req), { filter, search, page, pageSize });
+    let result = await Notification.list(
+      resolveEmployeeId(req),
+      { filter, search, page, pageSize },
+      isAdmin(req)
+    );
     res.json({ success: true, ...result });
   },
 
-  getSummary: (req, res) => {
-    res.json({ success: true, data: Notification.getSummary(resolveEmployeeId(req)) });
+  getSummary: async (req, res) => {
+    res.json({
+      success: true,
+      data: await Notification.getSummary(resolveEmployeeId(req), isAdmin(req)),
+    });
   },
 
   getPreferences: (req, res) => {
@@ -28,44 +39,43 @@ export let notificationController = {
     res.json({ success: true, data });
   },
 
-// edited code
-create: async (req, res) => {
-  let {
-    title,
-    description,
-    category,
-    priority,
-    recipientEmployeeId,
-  } = req.body;
+  create: async (req, res) => {
+    let {
+      title,
+      description,
+      category,
+      priority,
+      recipientEmployeeId,
+    } = req.body;
 
-  let data = await Notification.create({
-    title,
-    description,
-    category,
-    priority,
-    recipientEmployeeId: recipientEmployeeId || resolveEmployeeId(req),
-    isSystem: category === "system",
-  });
+    let data = await Notification.create({
+      title,
+      description,
+      category,
+      priority,
+      recipientEmployeeId: recipientEmployeeId || resolveEmployeeId(req),
+      isSystem: category === "system",
+    });
 
-  res.status(201).json({ success: true, data });
-},
+    res.status(201).json({ success: true, data });
+  },
 
   markAsRead: async (req, res) => {
-    let data = await Notification.markAsRead(req.params.id, resolveEmployeeId(req));
+    let data = await Notification.markAsRead(req.params.id, resolveEmployeeId(req), isAdmin(req));
     if (!data) throw new ApiError(404, "Notification not found");
     res.json({ success: true, data });
   },
 
   markAllAsRead: async (req, res) => {
-    let count = await Notification.markAllAsRead(resolveEmployeeId(req));
+    let count = await Notification.markAllAsRead(resolveEmployeeId(req), isAdmin(req));
     res.json({ success: true, data: { updated: count } });
   },
 
-  // edited code
   delete: async (req, res) => {
     const deleted = await Notification.deleteById(
       req.params.id,
-      resolveEmployeeId(req)
+      resolveEmployeeId(req),
+      isAdmin(req)
     );
 
     if (!deleted) {
@@ -77,5 +87,4 @@ create: async (req, res) => {
       data: { deleted: true },
     });
   },
-
 };

@@ -22,21 +22,15 @@ export async function persistNotificationUpdate(notif) {
   await NotificationModel.updateOne({ id }, { $set: rest });
   return notif;
 }
-// new added
+
 export async function persistNotificationDelete(id) {
   const result = await NotificationModel.deleteOne({ id });
-
-  if (result.deletedCount > 0) {
-    const index = notifications.findIndex((n) => n.id === id);
-    if (index !== -1) {
-      notifications.splice(index, 1);
-    }
-    return true;
+  const index = notifications.findIndex((n) => n.id === id);
+  if (index !== -1) {
+    notifications.splice(index, 1);
   }
-
-  return false;
+  return result.deletedCount > 0 || index !== -1;
 }
-
 
 /** Per-employee cache of notification preferences, kept in sync with MongoDB. */
 let preferencesCache = {};

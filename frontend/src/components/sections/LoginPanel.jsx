@@ -1,4 +1,4 @@
-import { Lock } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import TopBar from "@/components/layout/TopBar";
@@ -26,9 +26,9 @@ export default function LoginPanel() {
                 Contact Administrator
               </Link>
             </p>
-            <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">
-              <Lock className="h-3 w-3" />
-              ENTERPRISE-GRADE ENCRYPTION
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              GreatHire Teamora Internal Portal
             </p>
           </div>
         </div>
