@@ -105,6 +105,13 @@ export async function seedDatabaseIfEmpty() {
     logger.info("[seed] verified and synchronized owner (sravan) credentials");
   }
 
+  // Also ensure GreatHire Admin email if present has valid password credentials
+  let greathireUser = await UserModel.findOne({ email: /^greathire849@gmail\.com$/i });
+  if (greathireUser && !bcrypt.compareSync(demoPassword, greathireUser.passwordHash)) {
+    await UserModel.updateOne({ _id: greathireUser._id }, { $set: { passwordHash, role: "admin" } });
+    logger.info("[seed] verified and synchronized greathire admin credentials");
+  }
+
   if ((await ChannelModel.countDocuments()) === 0 && (await DirectConversationModel.countDocuments()) === 0) {
     let channels = buildDefaultChannel(CURRENT_EMPLOYEE_ID);
     await ChannelModel.insertMany(channels);

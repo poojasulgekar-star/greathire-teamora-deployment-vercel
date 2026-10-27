@@ -1,5 +1,9 @@
 import dns from "node:dns";
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
+try {
+  dns.setServers(["8.8.8.8", "8.8.4.4"]);
+} catch {
+  // Ignored in environments where custom DNS servers cannot be set
+}
 import "dotenv/config";
 import { createApp } from "./src/app.js";
 import { connectDB } from "./src/config/db.js";

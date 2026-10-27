@@ -7,7 +7,7 @@ import YAML from "yaml";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { getClientOrigins } from "./config/clientOrigins.js";
+import { getClientOrigins, isOriginAllowed } from "./config/clientOrigins.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 let openapiDocument = {};
@@ -63,27 +63,12 @@ export function createApp() {
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin) {
+        if (!origin || isOriginAllowed(origin)) {
           callback(null, true);
           return;
         }
 
-        let normalized = origin.trim().replace(/\/+$/, "");
-        let isAllowed = clientOrigins.some((allowed) => {
-          let cleanAllowed = allowed.replace(/\/+$/, "");
-          if (cleanAllowed === normalized) return true;
-          if (cleanAllowed.includes("*")) {
-            let regex = new RegExp("^" + cleanAllowed.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$");
-            return regex.test(normalized);
-          }
-          return false;
-        });
-
-        if (isAllowed) {
-          callback(null, true);
-          return;
-        }
-
+        let clientOrigins = getClientOrigins();
         logger.warn({ origin, allowed: clientOrigins }, "[cors] denied origin");
         callback(new ApiError(403, `Origin ${origin} is not allowed by CORS`));
       },

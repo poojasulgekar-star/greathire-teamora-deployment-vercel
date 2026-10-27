@@ -44,15 +44,27 @@ async function request(path, { method = "GET", body, params, headers, raw = fals
   }
 
   let token = getToken();
-  let res = await fetch(url.toString(), {
-    method,
-    headers: {
-      ...(body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(url.toString(), {
+      method,
+      headers: {
+        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    if (err instanceof TypeError || err.name === "TypeError") {
+      throw new ApiError(
+        `Unable to reach backend server (${API_BASE_URL}). Please verify that your backend server is running (port 5000) or check network connection.`,
+        0,
+        { originalError: err.message }
+      );
+    }
+    throw err;
+  }
 
  if (raw) {
   if (!res.ok) {
