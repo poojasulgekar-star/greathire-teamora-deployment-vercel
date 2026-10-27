@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, ArrowRight, KeyRound, Sparkles } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -17,12 +17,6 @@ export default function LoginForm() {
   let [rememberMe, setRememberMe] = useState(false);
   let [error, setError] = useState("");
   let [submitting, setSubmitting] = useState(false);
-
-  function fillDemoCredentials(demoEmail, demoPassword) {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError("");
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -76,36 +70,6 @@ export default function LoginForm() {
       <p className="mt-1.5 text-sm text-muted-foreground">
         Sign in using your company account.
       </p>
-
-      {/* Quick-fill Demo Credentials Card */}
-      <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3.5 text-xs text-indigo-950 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-200">
-        <div className="flex items-center justify-between font-semibold">
-          <span className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300">
-            <KeyRound className="h-3.5 w-3.5" />
-            Quick-Fill Demo Credentials:
-          </span>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => fillDemoCredentials("admin@greathire.com", "password123")}
-            className="inline-flex items-center gap-1 rounded bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white shadow-sm hover:bg-indigo-700 transition"
-          >
-            <Sparkles className="h-3 w-3" />
-            Admin Demo
-          </button>
-          <button
-            type="button"
-            onClick={() => fillDemoCredentials("sravanpilla1809@gmail.com", "password123")}
-            className="inline-flex items-center gap-1 rounded border border-indigo-300 bg-white px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 transition dark:border-indigo-700 dark:bg-slate-800 dark:text-indigo-300 dark:hover:bg-slate-700"
-          >
-            Sravan (Admin)
-          </button>
-        </div>
-        <p className="mt-1.5 text-[11px] text-indigo-600/80 dark:text-indigo-400">
-          Password: <code className="font-mono font-semibold">password123</code>
-        </p>
-      </div>
 
       {error && (
         <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
