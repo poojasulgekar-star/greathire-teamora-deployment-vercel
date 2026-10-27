@@ -11,11 +11,11 @@ import { loadProjects } from "../data/projectsStore.js";
 import { loadScheduleItems } from "../data/scheduleStore.js";
 import { logger } from "../config/logger.js";
 
-/** Hydrates every module-level cache from MongoDB. Employees must load first —
- * everything else joins against it. Call once at boot, after seeding. */
+/** Hydrates every module-level cache from MongoDB in parallel.
+ * Call once at boot, after seeding. */
 export async function loadAllData() {
-  await loadEmployees();
   await Promise.all([
+    loadEmployees(),
     loadAttendance(),
     loadActivity(),
     loadLeaveRequests(),
