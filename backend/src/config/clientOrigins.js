@@ -12,8 +12,6 @@ export function getClientOrigins() {
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://*.vercel.app",
-    "https://frontend-sravans-projects-d52b9dc4.vercel.app",
-    "https://frontend-three-alpha-37.vercel.app",
   ];
 
   for (let def of defaults) {
@@ -57,6 +55,11 @@ export function getPrimaryClientOrigin(req) {
     } catch {
       // ignore malformed URLs
     }
+    let host = req.get("x-forwarded-host") || req.get("host");
+    let proto = req.get("x-forwarded-proto") || "https";
+    if (host) {
+      return `${proto}://${host}`;
+    }
   }
 
   let allowed = getClientOrigins();
@@ -64,5 +67,5 @@ export function getPrimaryClientOrigin(req) {
   let prodOrigin = allowed.find(
     (o) => !o.includes("*") && !o.includes("localhost") && !o.includes("127.0.0.1")
   );
-  return prodOrigin || "https://frontend-sravans-projects-d52b9dc4.vercel.app";
+  return prodOrigin || "";
 }

@@ -87,7 +87,7 @@ export default function LoginForm() {
         <button
           type="button"
           onClick={() => {
-            setEmail("sravanpilla1809@gmail.com");
+            setEmail("sravan@greathire.com");
             setPassword("password123");
             setError("");
           }}
@@ -98,7 +98,7 @@ export default function LoginForm() {
         <button
           type="button"
           onClick={() => {
-            setEmail("poojasulgekar20@gmail.com");
+            setEmail("employee@greathire.com");
             setPassword("password123");
             setError("");
           }}

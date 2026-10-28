@@ -105,6 +105,61 @@ export async function seedDatabaseIfEmpty() {
     logger.info("[seed] verified and synchronized owner (sravan) credentials");
   }
 
+  let sravanGhUser = await UserModel.findOne({ email: /^sravan@greathire\.com$/i });
+  if (!sravanGhUser) {
+    await UserModel.create({
+      id: "user_sravan_gh",
+      employeeId: CURRENT_EMPLOYEE_ID,
+      name: "Sravan",
+      email: "sravan@greathire.com",
+      passwordHash,
+      role: "admin",
+      createdAt: new Date().toISOString(),
+    });
+    logger.info("[seed] created sravan admin login (sravan@greathire.com)");
+  } else if (!bcrypt.compareSync(demoPassword, sravanGhUser.passwordHash)) {
+    await UserModel.updateOne({ _id: sravanGhUser._id }, { $set: { passwordHash, role: "admin" } });
+  }
+
+  // Also ensure Demo Employee profile and user exist
+  let demoEmp = await EmployeeModel.findOne({ id: "emp_demo" });
+  if (!demoEmp) {
+    await EmployeeModel.create({
+      id: "emp_demo",
+      name: "Demo Employee",
+      role: "Software Engineer",
+      department: "Engineering",
+      initials: "DE",
+      joiningDate: new Date().toISOString().slice(0, 10),
+      avatar: null,
+      employeeCode: "GH-1001",
+      email: "employee@greathire.com",
+      phone: null,
+      performanceScore: 85,
+      taskLoadPercent: 70,
+      leaveAllocation: { casual: 6, paid: 12, sick: 4 },
+      leaveAccrual: 0,
+      documents: [],
+    });
+    logger.info("[seed] created demo employee profile");
+  }
+
+  let employeeUser = await UserModel.findOne({ email: /^employee@greathire\.com$/i });
+  if (!employeeUser) {
+    await UserModel.create({
+      id: "user_employee_demo",
+      employeeId: "emp_demo",
+      name: "Demo Employee",
+      email: "employee@greathire.com",
+      passwordHash,
+      role: "employee",
+      createdAt: new Date().toISOString(),
+    });
+    logger.info("[seed] created employee login (employee@greathire.com)");
+  } else if (!bcrypt.compareSync(demoPassword, employeeUser.passwordHash)) {
+    await UserModel.updateOne({ _id: employeeUser._id }, { $set: { passwordHash, role: "employee" } });
+  }
+
   // Also ensure GreatHire Admin email if present has valid password credentials
   let greathireUser = await UserModel.findOne({ email: /^greathire849@gmail\.com$/i });
   if (greathireUser && !bcrypt.compareSync(demoPassword, greathireUser.passwordHash)) {
