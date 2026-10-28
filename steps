@@ -1,90 +1,49 @@
 # Unified Single-Domain Vercel Deployment Guide
 
-This guide walks you through deploying both the **Frontend** and **Backend** together on **Vercel as a single project under ONE single domain**.
+Your application is **LIVE in Production** as a unified single-domain deployment on Vercel.
 
-No separate backend subdomains, no CORS issues, no cross-domain mismatches, and no "Dangerous Site" false alarms.
+---
+
+## Live Production Deployment (Single Domain)
+
+- **Production URL**: [https://greathire-teamora.vercel.app](https://greathire-teamora.vercel.app)
+- **Backend API Health Check**: [https://greathire-teamora.vercel.app/api/health](https://greathire-teamora.vercel.app/api/health)
+- **Vercel Project Dashboard**: [https://vercel.com/sravans-projects-d52b9dc4/greathire-teamora](https://vercel.com/sravans-projects-d52b9dc4/greathire-teamora)
+
+Both the **Frontend** and **Backend** operate on the exact same domain:
+- `https://greathire-teamora.vercel.app/` $\rightarrow$ React SPA Portal
+- `https://greathire-teamora.vercel.app/api/*` $\rightarrow$ Node.js Serverless API
 
 ---
 
 ## Verified Login Credentials (all passwords: `password123`)
 
-| Role | Email | Password |
-|---|---|---|
-| **Admin (Primary)** | `admin@greathire.com` | `password123` |
-| **Admin (Sravan)** | `sravan@greathire.com` | `password123` |
-| **Employee (Demo)** | `employee@greathire.com` | `password123` |
+| Role | Email | Password | Status |
+|---|---|---|---|
+| **Admin (Primary)** | `admin@greathire.com` | `password123` | Verified (200 OK) |
+| **Admin (Sravan)** | `sravan@greathire.com` | `password123` | Verified (200 OK) |
+| **Employee (Demo)** | `employee@greathire.com` | `password123` | Verified (200 OK) |
 
-*(Tip: The login page includes 1-click quick-fill buttons for these credentials).*
-
----
-
-## 1. Push Latest Unified Changes to GitHub
-
-From your terminal in `greathire-teamora-deployment-vercel`:
-```bash
-git add .
-git commit -m "Configure unified single-domain Vercel deployment with sanitized corporate credentials"
-git push origin main
-```
+*(The login page includes 1-click quick-fill buttons for instant sign in).*
 
 ---
 
-## 2. Deploy ONE Single Project on Vercel
+## Zero "Dangerous Site" Warning Protections Applied
 
-You only need **ONE** project on Vercel now.
-
-1. Go to your [Vercel Dashboard](https://vercel.com/dashboard).
-2. Click **Add New...** > **Project**.
-3. Select your GitHub repository: `greathire-teamora-deployment-vercel` and click **Import**.
-4. Configure Project Settings:
-   - **Project Name**: Choose a clean, fresh name like `greathire-teamora` or `teamora-portal`
-   - **Framework Preset**: `Other`
-   - **Root Directory**: Leave as default (`./` - do not select backend or frontend)
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `frontend/dist`
-   - **Install Command**: `npm install`
-5. Open the **Environment Variables** section and add the following:
-
-| Variable Name | Value |
-|---|---|
-| `NODE_ENV` | `production` |
-| `MONGODB_URI` | `mongodb+srv://greathire_backend:greathireisgreat@cluster0.d6kzzrb.mongodb.net/teamora?retryWrites=true&w=majority` |
-| `MONGODB_DB_NAME` | `teamora` |
-| `JWT_SECRET` | `7fGS9kL!2mP&8vX1qW5zR0tY3uI6oO4pA9sD1fG8` |
-| `JWT_EXPIRES_IN` | `1d` |
-| `JWT_REMEMBER_ME_EXPIRES_IN` | `30d` |
-| `JWT_REFRESH_EXPIRES_IN` | `7d` |
-| `JWT_REFRESH_REMEMBER_ME_EXPIRES_IN` | `60d` |
-| `SEED_DEMO_DATA` | `true` |
-| `SEED_USER_PASSWORD` | `password123` |
-| `CLIENT_ORIGIN` | `*` |
-| `BREVO_API_KEY` | *(Optional)* |
-| `BREVO_FROM_EMAIL` | `Teamora <greathire849@gmail.com>` |
-
-6. Click **Deploy**.
+1. **No Consumer Emails (`@gmail.com`) on Login Form**:
+   Automated Google Safe Browsing / Microsoft SmartScreen bots heavily flag free `.vercel.app` subdomains displaying `@gmail.com` next to password fields as potential phishing attacks. All demo accounts use corporate `@greathire.com` addresses.
+2. **Unified Same-Origin Architecture**:
+   Zero cross-subdomain credential routing or CORS preflight failures. All requests to `/api` are same-origin.
+3. **Enterprise Headers**:
+   - `X-Robots-Tag: noindex, nofollow, noarchive`
+   - `X-Frame-Options: SAMEORIGIN`
+   - `X-Content-Type-Options: nosniff`
 
 ---
 
-## 3. How It Operates Under ONE Single Domain
+## Custom Domain (Optional)
 
-Once deployed, Vercel gives you **one URL** (for example `https://greathire-teamora.vercel.app`):
-- **Frontend SPA**: `https://greathire-teamora.vercel.app/`
-- **Backend Health Check**: `https://greathire-teamora.vercel.app/api/health`
-- **All API routes**: `https://greathire-teamora.vercel.app/api/...`
-
-If you have a **Custom Domain** (e.g. `teamora.greathire.com` or `greathire.com`):
-1. In your Vercel project, go to **Settings** > **Domains**.
-2. Add your domain.
-3. Add the DNS CNAME/A record provided by Vercel in your DNS registrar.
-4. Your entire app (Frontend + Backend) is live on your custom domain!
-
----
-
-## 4. Why the "Dangerous Site" Warning Is Gone
-
-1. **No `@gmail.com` visible on public login screen**:
-   Automated Google Safe Browsing / SmartScreen bots aggressively scan new free subdomains. The previous demo buttons displayed personal `@gmail.com` addresses next to a password input, which triggered heuristic anti-phishing bots. All demo accounts now use official company domain emails (`@greathire.com`).
-2. **Unified Same-Origin Routing**:
-   Frontend and Backend live on the exact same domain. There are no cross-domain redirects or third-party credential passing.
-3. **Enterprise Meta & Anti-Crawler Headers**:
-   Includes `<meta name="application-name" content="Teamora">` and `X-Robots-Tag: noindex, nofollow, noarchive` so search engine crawlers don't index internal portals.
+If you wish to attach your own branded domain (e.g. `teamora.greathire.com` or `greathire.com`):
+1. Go to [Vercel Project Settings > Domains](https://vercel.com/sravans-projects-d52b9dc4/greathire-teamora/settings/domains).
+2. Enter your domain.
+3. Point the DNS CNAME/A record as instructed by Vercel.
