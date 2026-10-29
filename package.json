@@ -1,0 +1,15 @@
+{
+  "name": "greathire-teamora",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=worktrack-login",
+    "build:frontend": "npm run build --workspace=worktrack-login",
+    "start": "npm run start --workspace=greathire-teamora-backend"
+  }
+}

@@ -9,7 +9,7 @@
 const configuredApiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD
-    ? "https://backend-sravans-projects-d52b9dc4.vercel.app/api"
+    ? "/api"
     : "http://localhost:5000/api");
 
 const normalizedApiBaseUrl = configuredApiBaseUrl.replace(/\/+$/, "");
