@@ -6,6 +6,7 @@ import {
   avatarFor,
   persistNewMessage,
   persistReadState,
+  persistMessageDeletion,
   persistNewChannel,
   persistChannelMembers,
 } from "../data/messagesStore.js";
@@ -41,8 +42,10 @@ function timeLabel(iso) {
   return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
-function toMessageDto(m) {
-  let sender = m.senderId === "system" ? null : Employee.getById(m.senderId);
+function toMessageDto(m, employeeId = CURRENT_EMPLOYEE_ID) {
+  const sender =
+    m.senderId === "system" ? null : Employee.getById(m.senderId);
+
   return {
     id: m.id,
     conversationId: m.conversationId,
@@ -51,9 +54,11 @@ function toMessageDto(m) {
     senderAvatar: sender ? avatarFor(m.senderId) : null,
     content: m.content,
     attachments: m.attachments || [],
+    deletedFor: m.deletedFor || [],
+    deletedForEveryone: m.deletedForEveryone || false,
     createdAt: m.createdAt,
     time: timeLabel(m.createdAt),
-    isOwn: m.senderId === CURRENT_EMPLOYEE_ID,
+    isOwn: m.senderId === employeeId,
   };
 }
 
@@ -85,7 +90,7 @@ export let Message = {
     if (!conversation) return null;
 
     let all = conversationMessages(conversationId);
-    let uploadedFiles = await SharedFile.listForConversation(conversationId);
+    let uploadedFiles = await SharedFile.listForConversation(conversationId,employeeId);
     let sharedFiles = [
       ...uploadedFiles.map((file) => ({
         id: file.id,
@@ -127,13 +132,12 @@ export let Message = {
     let conversation = allConversationsFor(employeeId).find((c) => c.id === conversationId);
     if (!conversation) return null;
 
-    let all = conversationMessages(conversationId);
+    let all = conversationMessages(conversationId).filter((m) =>!(m.deletedFor || []).includes(employeeId) && !m.deletedForEveryone );
     let total = all.length;
     let totalPages = Math.max(1, Math.ceil(total / pageSize));
     let end = total - (page - 1) * pageSize;
     let start = Math.max(0, end - pageSize);
-    let data = all.slice(Math.max(0, start), Math.max(0, end)).map(toMessageDto);
-
+    let data = all.slice(Math.max(0, start), Math.max(0, end)).map((message) => toMessageDto(message, employeeId));
     return { data, page, pageSize, total, totalPages };
   },
 
@@ -158,8 +162,52 @@ export let Message = {
 
     return toMessageDto(message);
   },
+ /** Delete a message only for the current employee. */
+  async deleteForMe(conversationId, messageId, employeeId = CURRENT_EMPLOYEE_ID) {
+    let conversation = allConversationsFor(employeeId).find(
+      (c) => c.id === conversationId
+    );
+    if (!conversation) return null;
 
-  /** POST /api/messages/conversations/:id/read */
+    let message = messages.find(
+      (m) => m.id === messageId && m.conversationId === conversationId
+    );
+    if (!message) return null;
+
+    let deletedFor = message.deletedFor || [];
+    if (!deletedFor.includes(employeeId)) {
+      deletedFor = [...deletedFor, employeeId];
+    }
+
+    return persistMessageDeletion(messageId, { deletedFor });
+  },
+
+  /** Delete a message for everyone; only its sender can do this. */
+  async deleteForEveryone(conversationId, messageId, employeeId = CURRENT_EMPLOYEE_ID) {
+    let conversation = allConversationsFor(employeeId).find(
+      (c) => c.id === conversationId
+    );
+    if (!conversation) return null;
+
+    let message = messages.find(
+      (m) => m.id === messageId && m.conversationId === conversationId
+    );
+    if (!message) return null;
+
+    if (message.senderId !== employeeId) {
+      let error = new Error("Only the sender can delete this message for everyone");
+      error.status = 403;
+      throw error;
+    }
+
+    return persistMessageDeletion(messageId, {
+      deletedForEveryone: true,
+      deletedForEveryoneAt: new Date().toISOString(),
+      content: "",
+      attachments: [],
+    });
+  },
+/** POST /api/messages/conversations/:id/read */
   async markConversationRead(conversationId, employeeId = CURRENT_EMPLOYEE_ID) {
     let read = getReadStateFor(employeeId);
     let lastReadISO = new Date().toISOString();

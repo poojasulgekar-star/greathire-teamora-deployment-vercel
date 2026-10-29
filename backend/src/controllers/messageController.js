@@ -72,17 +72,32 @@ export let messageController = {
     if (!data) throw new ApiError(404, "Conversation not found");
     res.status(201).json({ success: true, data });
   },
-
-  createSharedFileUpload: async (req, res) => {
+  deleteMessageForMe: async (req, res) => {
+    let data = await Message.deleteForMe(
+      req.params.id,
+      req.params.messageId,
+      resolveEmployeeId(req)
+    );
+    if (!data) throw new ApiError(404, "Message not found");
+    res.json({ success: true, data });
+  },
+  deleteMessageForEveryone: async (req, res) => {
+    let data = await Message.deleteForEveryone(
+      req.params.id,
+      req.params.messageId,
+      resolveEmployeeId(req)
+    );
+if (!data) throw new ApiError(404, "Message not found");
+    res.json({ success: true, data });
+  },
+ createSharedFileUpload: async (req, res) => {
     let employeeId = resolveEmployeeId(req);
     let conversationId = req.params.id;
     if (!Message.hasConversationAccess(conversationId, employeeId)) {
       throw new ApiError(404, "Conversation not found");
     }
-
     let name = sanitizeFileName(req.body.name);
     if (!name) throw new ApiError(400, "File name is invalid.");
-
     let video = isVideoFile(name, req.body.contentType);
     let maxSizeBytes = video ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
     if (req.body.size > maxSizeBytes) {
@@ -186,7 +201,70 @@ export let messageController = {
     let url = await createDownloadUrl(file.key, file.name, req);
     res.json({ success: true, data: { url } });
   },
+  
+  deleteSharedFileForMe: async (req, res) => {
+    const employeeId = resolveEmployeeId(req);
+    const conversationId = req.params.id;
 
+    if (!Message.hasConversationAccess(conversationId, employeeId)) {
+      throw new ApiError(404, "Conversation not found");
+    }
+
+    const file = await SharedFile.findById(
+      conversationId,
+      req.params.fileId
+    );
+
+    if (
+      !file ||
+      file.status !== "ready" ||
+      file.deletedForEveryone ||
+      (file.deletedFor || []).includes(employeeId)
+    ) {
+      throw new ApiError(404, "Shared file not found");
+    }
+
+    const updated = await SharedFile.deleteForMe(
+      conversationId,
+      req.params.fileId,
+      employeeId
+    );
+
+    if (!updated) throw new ApiError(404, "Shared file not found");
+
+    res.json({ success: true, data: { id: updated.id } });
+  },
+
+  deleteSharedFileForEveryone: async (req, res) => {
+    const employeeId = resolveEmployeeId(req);
+    const conversationId = req.params.id;
+
+    if (!Message.hasConversationAccess(conversationId, employeeId)) {
+      throw new ApiError(404, "Conversation not found");
+    }
+
+    const file = await SharedFile.findById(
+      conversationId,
+      req.params.fileId
+    );
+
+    if (!file || file.status !== "ready" || file.deletedForEveryone) {
+      throw new ApiError(404, "Shared file not found");
+    }
+
+    if (file.uploaderId !== employeeId) {
+      throw new ApiError(403, "Only the uploader can delete this file for everyone.");
+    }
+
+    const updated = await SharedFile.deleteForEveryone(
+      conversationId,
+      req.params.fileId
+    );
+
+    if (!updated) throw new ApiError(404, "Shared file not found");
+
+    res.json({ success: true, data: { id: updated.id } });
+  },
   cancelSharedFileUpload: async (req, res) => {
     let employeeId = resolveEmployeeId(req);
     let conversationId = req.params.id;

@@ -9,11 +9,18 @@ export const SharedFile = {
     return SharedFileModel.findOne({ conversationId, id });
   },
 
-  listForConversation(conversationId) {
-    return SharedFileModel.find({ conversationId, status: "ready" })
+ 
+  listForConversation(conversationId, employeeId) {
+    return SharedFileModel.find({
+      conversationId,
+      status: "ready",
+      deletedForEveryone: false,
+      deletedFor: { $ne: employeeId },
+    })
       .sort({ createdAt: -1 })
       .lean();
   },
+
 
   markReady(id) {
     return SharedFileModel.findOneAndUpdate(
@@ -30,4 +37,34 @@ export const SharedFile = {
   deletePendingById(conversationId, id) {
     return SharedFileModel.findOneAndDelete({ conversationId, id, status: "pending" });
   },
+  deleteForMe(conversationId, id, employeeId) {
+    return SharedFileModel.findOneAndUpdate(
+      {
+        conversationId,
+        id,
+        status: "ready",
+        deletedForEveryone: false,
+      },
+      { $addToSet: { deletedFor: employeeId } },
+      { new: true }
+    );
+  },
+  deleteForEveryone(conversationId, id) {
+    return SharedFileModel.findOneAndUpdate(
+      {
+        conversationId,
+        id,
+        status: "ready",
+        deletedForEveryone: false,
+      },
+      {
+        $set: {
+          deletedForEveryone: true,
+          deletedForEveryoneAt: new Date().toISOString(),
+        },
+      },
+      { new: true }
+    );
+  },
+
 };

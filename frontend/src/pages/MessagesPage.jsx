@@ -229,41 +229,125 @@ function ChatHeader({ conversation, searchOpen, onToggleSearch, searchValue, onS
   );
 }
 
-function MessageBubble({ message }) {
+
+function MessageBubble({ message, onDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete(mode) {
+    const label =
+      mode === "everyone" ? "for everyone" : "for me";
+
+    if (!window.confirm(`Delete this message ${label}?`)) {
+      return;
+    }
+
+    setDeleting(true);
+    setMenuOpen(false);
+
+    try {
+      await onDelete(message, mode);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
-<div
-  className={`flex items-start gap-3 mb-6 w-full max-w-full sm:max-w-xl ${
-    message.isOwn ? "ml-auto flex-row-reverse" : ""
-  }`}
->      {message.senderAvatar && (
-        <img src={message.senderAvatar} alt={message.senderName} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+    <div
+      className={`flex items-start gap-3 mb-6 w-full max-w-full sm:max-w-xl ${
+        message.isOwn ? "ml-auto flex-row-reverse" : ""
+      }`}
+    >
+      {message.senderAvatar && (
+        <img
+          src={message.senderAvatar}
+          alt={message.senderName}
+          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+        />
       )}
-      <div>
-        <p className={`text-sm mb-1 ${message.isOwn ? "text-right" : ""}`}>
-          {message.isOwn ? (
-            <>
-              <span className="text-xs text-slate-400 dark:text-slate-500 mr-2">{message.time}</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{message.senderName}</span>
-            </>
-          ) : (
-            <>
-              <span className="font-semibold text-slate-900 dark:text-white">{message.senderName}</span>
-              <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">{message.time}</span>
-            </>
-          )}
-        </p>
+
+      <div className="min-w-0 max-w-full">
         <div
-          className={`rounded-2xl px-4 py-3 text-sm ${
-            message.isOwn ? "bg-blue-600 text-white rounded-tr-sm" : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-sm"
+          className={`flex items-center gap-2 mb-1 ${
+            message.isOwn ? "justify-end" : ""
+          }`}
+        >
+          <p className="text-sm">
+            {message.isOwn ? (
+              <>
+                <span className="text-xs text-slate-400 mr-2">
+                  {message.time}
+                </span>
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  {message.senderName}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  {message.senderName}
+                </span>
+                <span className="text-xs text-slate-400 ml-2">
+                  {message.time}
+                </span>
+              </>
+            )}
+          </p>
+
+          <div className="relative">
+            <button
+              type="button"
+              title="Message options"
+              aria-label="Message options"
+              disabled={deleting}
+              onClick={() => setMenuOpen((open) => !open)}
+              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                <button
+                  type="button"
+                  onClick={() => handleDelete("me")}
+                  className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Delete for me
+                </button>
+
+                {message.isOwn && (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete("everyone")}
+                    className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Delete for everyone
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          className={`rounded-2xl px-4 py-3 text-sm break-words ${
+            message.isOwn
+              ? "bg-blue-600 text-white rounded-tr-sm"
+              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-sm"
           }`}
         >
           {message.content}
         </div>
+
         {(message.attachments || []).length > 0 && (
           <div className="flex flex-col gap-1 mt-2">
-            {message.attachments.map((a, i) => (
-              <div key={i} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
-                {a.name || a.label}
+            {message.attachments.map((attachment, index) => (
+              <div
+                key={index}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-600 dark:text-slate-300"
+              >
+                {attachment.name || attachment.label}
               </div>
             ))}
           </div>
@@ -272,8 +356,7 @@ function MessageBubble({ message }) {
     </div>
   );
 }
-
-function MessageThread({ messages, filterQuery }) {
+function MessageThread({ messages, filterQuery, onDelete }) {
   const filtered = filterQuery
     ? messages.filter((m) => m.content?.toLowerCase().includes(filterQuery.toLowerCase()))
     : messages;
@@ -284,7 +367,13 @@ function MessageThread({ messages, filterQuery }) {
       ) : filtered.length === 0 ? (
         <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-10">No messages match "{filterQuery}".</p>
       ) : (
-        filtered.map((m) => <MessageBubble key={m.id} message={m} />)
+        filtered.map((m) => (
+  <MessageBubble
+    key={m.id}
+    message={m}
+    onDelete={onDelete}
+  />
+))
       )}
     </div>
   );
@@ -414,7 +503,13 @@ function formatFileSize(size) {
   return `${Math.max(1, Math.round(size / 1024))} KB`;
 }
 
-function ProfilePanel({ conversation, onUpload, onDownload, uploadStatus }) {
+function ProfilePanel({
+  conversation,
+  onUpload,
+  onDownload,
+  onDeleteFile,
+  uploadStatus,
+}) {
   const fileInputRef = React.useRef(null);
   if (!conversation) return <aside className="w-72 h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 flex-shrink-0" />;
   const isDm = conversation.type === "dm";
@@ -478,6 +573,18 @@ function ProfilePanel({ conversation, onUpload, onDownload, uploadStatus }) {
                   <Download className="h-4 w-4" />
                 </button>
               )}
+              
+{f.id && (
+  <button
+    type="button"
+    onClick={() => onDeleteFile(f)}
+    title="Delete shared file"
+    className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+  >
+    <X className="h-4 w-4" />
+  </button>
+)}
+
             </div>
           ))}
         </div>
@@ -677,6 +784,49 @@ export default function MessagesPage() {
     }
   }
 
+  
+async function handleDeleteFile(file) {
+  if (!activeId || !file?.id) return;
+
+  const mode = window.prompt(
+    "Type 'me' to delete for me, or 'everyone' to delete for everyone:"
+  );
+
+  if (mode !== "me" && mode !== "everyone") return;
+
+  if (
+    mode === "everyone" &&
+    !window.confirm(
+      "This will remove the file for everyone. Continue?"
+    )
+  ) {
+    return;
+  }
+
+  if (
+    mode === "me" &&
+    !window.confirm("Remove this file from your view?")
+  ) {
+    return;
+  }
+
+  try {
+    if (mode === "everyone") {
+      await messagesApi.deleteSharedFileForEveryone(activeId, file.id);
+    } else {
+      await messagesApi.deleteSharedFileForMe(activeId, file.id);
+    }
+
+    const details = await messagesApi.getConversation(activeId);
+    setConversation(details);
+  } catch (error) {
+    window.alert(
+      error?.message || "Could not delete the shared file."
+    );
+  }
+}
+
+
   function refreshConversations() {
     messagesApi.listConversations().then((list) => {
       setConversations(list);
@@ -715,13 +865,65 @@ export default function MessagesPage() {
     setSearchValue("");
   }, [activeId, loadConversation]);
 
-  async function handleSend(content, attachments) {
-    if (!activeId) return;
-    let message = await messagesApi.sendMessage(activeId, content, attachments);
-    setMessages((prev) => [...prev, message]);
-  }
+  
+async function handleSend(content, attachments = []) {
+  if (!activeId || !content?.trim()) return;
 
-  return (
+  try {
+    const response = await messagesApi.sendMessage(
+      activeId,
+      content.trim(),
+      attachments
+    );
+
+    const message = response?.data?.data ?? response?.data ?? response;
+
+    if (!message?.id) {
+      console.error("Unexpected sendMessage response:", response);
+      return;
+    }
+
+    setMessages((prev) => {
+      if (prev.some((item) => item.id === message.id)) return prev;
+      return [...prev, message];
+    });
+
+    refreshConversations();
+  } catch (error) {
+    console.error("Failed to send message:", error);
+    window.alert(error?.message || "Message could not be sent.");
+  }
+}
+
+ 
+async function handleDeleteMessage(message, mode) {
+  if (!activeId) return;
+
+  try {
+    if (mode === "everyone") {
+      await messagesApi.deleteMessageForEveryone(activeId, message.id);
+    } else {
+      await messagesApi.deleteMessageForMe(activeId, message.id);
+    }
+
+    // Chat madhun deleted message lagech remove kara
+    setMessages((prev) =>
+      prev.filter((item) => item.id !== message.id)
+    );
+
+    // Shared Files panel lagech refresh kara
+    const details = await messagesApi.getConversation(activeId);
+    setConversation(details);
+
+    refreshConversations();
+  } catch (error) {
+    window.alert(
+      error?.message || "Could not delete the message. Please try again."
+    );
+  }
+}
+
+return (
     
 <div className="relative w-full h-[100dvh] overflow-hidden flex bg-slate-50 dark:bg-slate-950">
 
@@ -786,7 +988,11 @@ export default function MessagesPage() {
   onOpenSidebar={() => setSidebarOpen(true)}
 />
 
-        <MessageThread messages={messages} filterQuery={searchOpen ? searchValue : ""} />
+        <MessageThread
+  messages={messages}
+  filterQuery={searchOpen ? searchValue : ""}
+  onDelete={handleDeleteMessage}
+/>
         <MessageInput
           conversationLabel={conversation?.label}
           onSend={handleSend}
@@ -801,6 +1007,7 @@ export default function MessagesPage() {
     onUpload={handleUploadFiles}
     onDownload={handleDownloadFile}
     uploadStatus={uploadStatus}
+    onDeleteFile={handleDeleteFile}
   />
 </div>
       {channelModal && (

@@ -54,6 +54,23 @@ export async function persistNewMessage(message) {
   return message;
 }
 
+export async function persistMessageDeletion(messageId, updates) {
+  const message = messages.find((m) => m.id === messageId);
+
+  if (!message) {
+    return null;
+  }
+
+  await MessageModel.updateOne(
+    { id: messageId },
+    { $set: updates }
+  );
+
+  Object.assign(message, updates);
+
+  return message;
+}
+
 export async function persistReadState(employeeId, conversationId, lastReadISO) {
   await ReadStateModel.updateOne(
     { employeeId, conversationId },

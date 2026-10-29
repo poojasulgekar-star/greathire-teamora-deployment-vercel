@@ -181,6 +181,7 @@ let DirectConversationSchema = new Schema(
   base
 );
 
+
 let MessageSchema = new Schema(
   {
     id: { type: String, unique: true, index: true },
@@ -189,9 +190,13 @@ let MessageSchema = new Schema(
     content: String,
     createdAt: { type: String, default: () => new Date().toISOString() },
     attachments: [{ type: { type: String }, name: String, note: String, label: String }],
+    deletedFor: { type: [String], default: [] },
+    deletedForEveryone: { type: Boolean, default: false },
+    deletedForEveryoneAt: { type: String, default: null },
   },
   base
 );
+
 
 let SharedFileSchema = new Schema(
   {
@@ -206,6 +211,9 @@ let SharedFileSchema = new Schema(
     uploaderId: { type: String, index: true },
     uploaderName: String,
     status: { type: String, default: "pending", index: true },
+    deletedFor: { type: [String], default: [] },
+    deletedForEveryone: { type: Boolean, default: false },
+    deletedForEveryoneAt: { type: String, default: null },
     createdAt: { type: String, default: () => new Date().toISOString() },
   },
   base

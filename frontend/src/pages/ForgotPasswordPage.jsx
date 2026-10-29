@@ -1,3 +1,4 @@
+
 import { Lock } from "lucide-react";
 import HeroPanel from "@/components/sections/HeroPanel";
 import TopBar from "@/components/layout/TopBar";

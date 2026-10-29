@@ -45,6 +45,13 @@ export const sharedFileParamsSchema = z.object({
   fileId: z.string().trim().min(1, "fileId is required"),
 });
 
+
+export const messageParamsSchema = z.object({
+  id: z.string().trim().min(1, "id is required"),
+  messageId: z.string().trim().min(1, "messageId is required"),
+});
+
+
 export const createChannelSchema = z.object({
   name: z.string().trim().min(1, "name is required").max(80),
   memberIds: z.array(z.string().trim().min(1)).max(500).optional().default([]),

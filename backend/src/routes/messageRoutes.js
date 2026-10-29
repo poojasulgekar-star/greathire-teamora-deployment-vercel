@@ -6,6 +6,7 @@ import { validate } from "../middleware/validate.js";
 import { idParamSchema } from "../validators/common.js";
 import {
   messageListQuerySchema,
+  messageParamsSchema,
   sendMessageSchema,
   createSharedFileUploadSchema,
   sharedFileParamsSchema,
@@ -58,11 +59,37 @@ router.get(
   validate(sharedFileParamsSchema, "params"),
   asyncHandler(messageController.getSharedFileDownloadUrl)
 );
+
+
+router.delete(
+  "/conversations/:id/files/:fileId/delete-for-me",
+  validate(sharedFileParamsSchema, "params"),
+  asyncHandler(messageController.deleteSharedFileForMe)
+);
+
+router.delete(
+  "/conversations/:id/files/:fileId/delete-for-everyone",
+  validate(sharedFileParamsSchema, "params"),
+  asyncHandler(messageController.deleteSharedFileForEveryone)
+);
+
 router.get(
   "/conversations/:id/messages",
   validate(idParamSchema, "params"),
   validate(messageListQuerySchema, "query"),
   asyncHandler(messageController.listMessages)
+);
+
+router.delete(
+  "/conversations/:id/messages/:messageId/delete-for-me",
+  validate(messageParamsSchema, "params"),
+  asyncHandler(messageController.deleteMessageForMe)
+);
+
+router.delete(
+  "/conversations/:id/messages/:messageId/delete-for-everyone",
+  validate(messageParamsSchema, "params"),
+  asyncHandler(messageController.deleteMessageForEveryone)
 );
 router.post(
   "/conversations/:id/messages",

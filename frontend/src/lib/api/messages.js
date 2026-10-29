@@ -5,9 +5,22 @@ export const messagesApi = {
   getConversation: (id) => api.get(`/messages/conversations/${id}`),
   listMessages: (id) => api.get(`/messages/conversations/${id}/messages`),
   sendMessage: (id, content, attachments) => api.post(`/messages/conversations/${id}/messages`, { content, attachments }),
+  deleteMessageForMe: (conversationId, messageId) =>api.delete(`/messages/conversations/${conversationId}/messages/${messageId}/delete-for-me`),
+  deleteMessageForEveryone: (conversationId, messageId) =>api.delete(`/messages/conversations/${conversationId}/messages/${messageId}/delete-for-everyone`),
   createSharedFileUpload: (id, file) => api.post(`/messages/conversations/${id}/files/uploads`, file),
   completeSharedFileUpload: (id, fileId) => api.post(`/messages/conversations/${id}/files/${fileId}/complete`, {}),
   cancelSharedFileUpload: (id, fileId) => api.delete(`/messages/conversations/${id}/files/${fileId}`),
+  
+  deleteSharedFileForMe: (conversationId, fileId) =>
+    api.delete(
+      `/messages/conversations/${conversationId}/files/${fileId}/delete-for-me`
+    ),
+
+  deleteSharedFileForEveryone: (conversationId, fileId) =>
+    api.delete(
+      `/messages/conversations/${conversationId}/files/${fileId}/delete-for-everyone`
+    ),
+
   getSharedFileDownloadUrl: (id, fileId) => api.get(`/messages/conversations/${id}/files/${fileId}/download`),
   markRead: (id) => api.post(`/messages/conversations/${id}/read`),
 
