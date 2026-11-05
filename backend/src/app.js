@@ -37,6 +37,7 @@ import messageRoutes from "./routes/messageRoutes.js";
 import storageRoutes from "./routes/storageRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
+  import integrationRoutes from "./routes/integrationRoutes.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
@@ -107,6 +108,7 @@ export function createApp() {
   app.use("/api/messages", messageRoutes);
   app.use("/api/projects", projectRoutes);
   app.use("/api/schedule", scheduleRoutes);
+    app.use("/api/integration", integrationRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

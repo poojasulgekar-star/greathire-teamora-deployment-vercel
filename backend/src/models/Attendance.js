@@ -13,6 +13,7 @@ import {
   todayISO,
   formatTimeIST,
   parseClockToMinutes,
+  formatMinutesToClock,
 } from "../utils/dates.js";
 
 import { generateId } from "../utils/id.js";
@@ -61,7 +62,47 @@ function withEmployee(record) {
   return { ...record, employee };
 }
 
+// ---- Helpers for attendance pushed from the verification portal ----
 
+function findEmployeeByCode(code) {
+  const wanted = String(code || "").trim().toLowerCase();
+  if (!wanted) return null;
+  return (
+    Employee.getAll().find(
+      (e) => String(e.employeeCode || "").toLowerCase() === wanted
+    ) || null
+  );
+}
+
+/** "09:30" or "09:30 AM" / "6:05 pm" -> minutes since midnight, or null if invalid. */
+function toMinutes(value) {
+  if (typeof value !== "string") return null;
+  const m = value.trim().toUpperCase().match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/);
+  if (!m) return null;
+  let h = Number(m[1]);
+  const min = Number(m[2]);
+  const period = m[3];
+  if (min > 59) return null;
+  if (period) {
+    if (h < 1 || h > 12) return null;
+    if (period === "PM" && h !== 12) h += 12;
+    if (period === "AM" && h === 12) h = 0;
+  } else if (h > 23) {
+    return null;
+  }
+  return h * 60 + min;
+}
+
+/** 570 -> "09:30 AM" (same shape formatTimeIST produces). */
+function clockLabel(totalMinutes) {
+  const { time, period } = formatMinutesToClock(totalMinutes);
+  return `${time} ${period}`;
+}
+
+/** Builds an ISO timestamp for an IST date + minutes-since-midnight. */
+function istISO(date, minutes) {
+  return new Date(Date.parse(`${date}T00:00:00+05:30`) + minutes * 60_000).toISOString();
+}
 function hasApprovedLeaveToday(employeeId) {
   const today = todayISO();
 
@@ -333,6 +374,97 @@ async checkOut(employeeId) {
 
   return withEmployee(record);
 },
+  /** Called by the verification portal. Creates or updates one day's record
+   * from admin-entered check-in / check-out times. Upserts by employee + date. */
+  async recordFromVerification({ employeeCode, date, checkIn, checkOut }) {
+    const employee = findEmployeeByCode(employeeCode);
+    if (!employee) {
+      throw new ApiError(404, `No Teamora employee with code ${employeeCode}`);
+    }
+
+    const day = date || todayISO();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(Date.parse(day))) {
+      throw new ApiError(400, "date must be in YYYY-MM-DD format");
+    }
+
+    const inMinutes = toMinutes(checkIn);
+    if (inMinutes === null) {
+      throw new ApiError(400, "checkIn must look like 09:30 or 09:30 AM");
+    }
+
+    const hasCheckOut =
+      checkOut !== undefined && checkOut !== null && String(checkOut).trim() !== "";
+    const outMinutes = hasCheckOut ? toMinutes(checkOut) : null;
+    if (hasCheckOut && outMinutes === null) {
+      throw new ApiError(400, "checkOut must look like 18:00 or 06:00 PM");
+    }
+    if (hasCheckOut && outMinutes < inMinutes) {
+    throw new ApiError(400, "checkOut must be after checkIn");
+    }
+
+    const SHIFT_START_MINUTES = 10 * 60;
+    const isLate = inMinutes > SHIFT_START_MINUTES;
+
+    const fields = {
+      status: isLate ? "Late" : "Present",
+      late: isLate,
+      checkIn: clockLabel(inMinutes),
+      checkInAt: istISO(day, inMinutes),
+      checkOut: hasCheckOut ? clockLabel(outMinutes) : null,
+      checkOutAt: hasCheckOut ? istISO(day, outMinutes) : null,
+      liveStatus: !hasCheckOut && day === todayISO() ? "Working" : null,
+      breakStartedAt: null,
+    };
+
+    const existing = attendanceRecords.find(
+      (r) => r.employeeId === employee.id && r.date === day
+    );
+
+    if (existing) {
+      const wasAbsent = existing.status === "Absent";
+      Object.assign(existing, fields);
+      existing.hoursWorked = hasCheckOut
+        ? Number(calculateHoursWorked(existing).toFixed(2))
+        : 0;
+      await persistAttendanceUpdate(existing);
+      if (wasAbsent) await Employee.adjustLeaveAccrual(employee.id, 0.5);
+      logActivity("check-in", employee.id, `${employee.name} attendance updated from verification`);
+      return { created: false, record: withEmployee(existing) };
+    }
+
+    const record = {
+      id: generateId("att"),
+      employeeId: employee.id,
+      date: day,
+      breakDurationMs: 0,
+      hoursWorked: 0,
+      ...fields,
+    };
+    if (hasCheckOut) {
+      record.hoursWorked = Number(calculateHoursWorked(record).toFixed(2));
+    }
+
+    await persistNewAttendance(record);
+    await Employee.adjustLeaveAccrual(employee.id, 0.5);
+    logActivity("check-in", employee.id, `${employee.name} checked in (via verification)`);
+
+    await createAttendanceNotifications({
+      employeeId: employee.id,
+      employeeName: employee.name,
+      action: "check-in",
+      time: record.checkIn,
+    });
+    if (hasCheckOut) {
+      await createAttendanceNotifications({
+        employeeId: employee.id,
+        employeeName: employee.name,
+        action: "check-out",
+        time: record.checkOut,
+      });
+    }
+
+    return { created: true, record: withEmployee(record) };
+  },
  async startBreak(employeeId) {
   const record = findTodayRecord(employeeId);
   if (!record || record.liveStatus !== "Working") return null;
